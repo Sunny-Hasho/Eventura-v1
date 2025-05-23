@@ -6,10 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.lang.reflect.Type;
-import java.sql.Blob;
-
-
 @Entity
 @Data
 @NoArgsConstructor
@@ -26,6 +22,6 @@ public class ServiceProvider {
     private String slogan;
 
     @Lob
-    @Column(name = "photo", columnDefinition = "LONGBLOB") // Optional: specify SQL column type
-    private Byte[] photo;
+    @Column(name = "photo", columnDefinition = "LONGTEXT") // ✅ store base64 as text
+    private String photo;
 }

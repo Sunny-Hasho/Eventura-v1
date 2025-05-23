@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Contoller;
 
-
 import com.Eventura.Eventura.DTO.ServiceProviderDetailsDTO;
 import com.Eventura.Eventura.Service.ServiceProviderDetailsService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,11 @@ public class ServiceProviderDetailsController {
     @GetMapping("/{id}")
     public ResponseEntity<ServiceProviderDetailsDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
+    }
+
+    @GetMapping("/by-provider/{serviceProviderId}")
+    public ResponseEntity<ServiceProviderDetailsDTO> getByServiceProviderId(@PathVariable Long serviceProviderId) {
+        return ResponseEntity.ok(service.getByServiceProviderId(serviceProviderId));
     }
 
     @PutMapping("/{id}")

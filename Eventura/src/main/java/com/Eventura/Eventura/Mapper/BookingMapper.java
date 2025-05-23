@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Mapper;
 
-
 import com.Eventura.Eventura.DTO.BookingDTO;
 import com.Eventura.Eventura.Model.Booking;
 import com.Eventura.Eventura.Model.Events;
@@ -17,8 +16,11 @@ public class BookingMapper {
                 .paymentRefNumber(booking.getPaymentRefNumber())
                 .booked(booking.getBooked())
                 .eventId(booking.getEvent() != null ? booking.getEvent().getId() : null)
+                .eventName(booking.getEvent() != null ? booking.getEvent().getName() : null)
                 .userId(booking.getUser() != null ? booking.getUser().getId() : null)
+                .userEmail(booking.getUser() != null ? booking.getUser().getEmail() : null)
                 .customerId(booking.getCustomerId())
+                .status(booking.getStatus())
                 .build();
     }
 
@@ -31,6 +33,7 @@ public class BookingMapper {
                 .event(event)
                 .user(user)
                 .customerId(dto.getCustomerId())
+                .status(dto.getStatus() != null ? dto.getStatus() : "PENDING")
                 .build();
     }
 }

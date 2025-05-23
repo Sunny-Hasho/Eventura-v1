@@ -1,13 +1,764 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Portfolio - EventPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animations */
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Eventura</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .pulse-animation {
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .service-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .gallery-image {
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .gallery-image:hover {
+            transform: scale(1.05);
+            border-color: #5D5FEF;
+            z-index: 10;
+        }
+
+        /* Service tabs styling */
+        .service-tab {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .service-tab.active {
+            border-color: #5D5FEF;
+            color: #5D5FEF;
+            font-weight: 600;
+        }
+
+        .service-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #5D5FEF;
+            animation: pulse 2s infinite;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #5D5FEF;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b4cbe;
+        }
+
+        /* Button styling */
+        .btn-primary {
+            background-color: #5D5FEF;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #4b4cbe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(93, 95, 239, 0.4);
+        }
+
+        .btn-outline {
+            border: 2px solid #5D5FEF;
+            color: #5D5FEF;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(93, 95, 239, 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+<header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center">
+            <a href="#" class="text-[#5D5FEF] hover:text-[#4b4cbe] flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Search
+            </a>
+            <div class="flex space-x-4">
+                <button class="btn-outline py-2 px-4 rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    Save
+                </button>
+                <button class="btn-primary py-2 px-4 rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Contact
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- Professional Profile Header -->
+    <section class="bg-white rounded-xl shadow-lg overflow-hidden mb-10 border border-gray-100">
+        <div class="md:flex">
+            <!-- Profile Image -->
+            <div class="md:w-1/3 relative">
+                <div class="absolute top-0 left-0 w-full h-full gradient-bg opacity-10"></div>
+                <img id="profile-image" src="https://via.placeholder.com/500" alt="Professional's Name" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Profile Info -->
+            <div class="p-8 md:w-2/3">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 id="pro-name" class="text-3xl font-bold text-gray-900">Sarah Johnson</h1>
+                        <p id="pro-category" class="text-lg text-[#5D5FEF] font-medium">Professional Photographer</p>
+                    </div>
+                    <div class="flex items-center bg-[#5D5FEF]/10 px-4 py-2 rounded-full pulse-animation">
+                        <span class="text-yellow-500 mr-1">★</span>
+                        <span id="pro-rating" class="font-medium">4.9</span>
+                        <span class="text-gray-500 ml-1">(48 reviews)</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-wrap gap-4 text-gray-600">
+                    <div class="flex items-center bg-gray-100 px-3 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span id="pro-location">New York, NY</span>
+                    </div>
+                    <div class="flex items-center bg-gray-100 px-3 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span id="pro-joined">Member since June 2021</span>
+                    </div>
+                    <div class="flex items-center bg-gray-100 px-3 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Verified Professional</span>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h2 class="text-xl font-semibold mb-3">About Me</h2>
+                    <p id="pro-bio" class="text-gray-700 leading-relaxed">
+                        With over 10 years of experience capturing life's most precious moments, I specialize in wedding photography, portraits, and event coverage. My style blends candid photojournalism with elegant portraiture to tell your unique story. I'm passionate about creating images that you'll treasure for generations.
+                    </p>
+                </div>
+
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <span class="bg-gray-200 px-3 py-1 rounded-full text-sm">Weddings</span>
+                    <span class="bg-gray-200 px-3 py-1 rounded-full text-sm">Portraits</span>
+                    <span class="bg-gray-200 px-3 py-1 rounded-full text-sm">Events</span>
+                    <span class="bg-gray-200 px-3 py-1 rounded-full text-sm">Family Sessions</span>
+                    <span class="bg-gray-200 px-3 py-1 rounded-full text-sm">Commercial</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Preview -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Portfolio Gallery
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <img src="https://via.placeholder.com/300" alt="Gallery image" class="gallery-image w-full h-48 object-cover rounded-lg shadow-md float-animation">
+            <img src="https://via.placeholder.com/300" alt="Gallery image" class="gallery-image w-full h-48 object-cover rounded-lg shadow-md float-animation" style="animation-delay: 0.5s">
+            <img src="https://via.placeholder.com/300" alt="Gallery image" class="gallery-image w-full h-48 object-cover rounded-lg shadow-md float-animation" style="animation-delay: 1s">
+            <img src="https://via.placeholder.com/300" alt="Gallery image" class="gallery-image w-full h-48 object-cover rounded-lg shadow-md float-animation" style="animation-delay: 1.5s">
+        </div>
+        <div class="text-center mt-6">
+            <button class="btn-outline py-2 px-6 rounded-lg flex items-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                View All Photos (48)
+            </button>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="mb-12">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Services Offered
+            </h2>
+            <span class="bg-[#5D5FEF]/10 text-[#5D5FEF] px-3 py-1 rounded-full text-sm font-medium">12 Available Services</span>
+        </div>
+
+        <!-- Service Categories Tabs -->
+        <div class="flex overflow-x-auto pb-2 mb-6 space-x-4 scrollbar-thin scrollbar-thumb-[#5D5FEF] scrollbar-track-gray-100">
+            <button class="service-tab active whitespace-nowrap px-4 py-2 border-b-2 border-[#5D5FEF] text-[#5D5FEF] focus:outline-none">
+                All Services (12)
+            </button>
+            <button class="service-tab whitespace-nowrap px-4 py-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900 focus:outline-none">
+                Weddings (4)
+            </button>
+            <button class="service-tab whitespace-nowrap px-4 py-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900 focus:outline-none">
+                Portraits (3)
+            </button>
+            <button class="service-tab whitespace-nowrap px-4 py-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900 focus:outline-none">
+                Events (3)
+            </button>
+            <button class="service-tab whitespace-nowrap px-4 py-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900 focus:outline-none">
+                Commercial (2)
+            </button>
+        </div>
+
+        <!-- Services Grid -->
+        <div id="services-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Wedding Photography Services -->
+            <div class="service-card bg-white rounded-lg shadow-md overflow-hidden" data-category="weddings">
+                <div class="relative">
+                    <img src="https://via.placeholder.com/300" alt="Wedding Photography" class="w-full h-48 object-cover">
+                    <span class="absolute top-3 right-3 bg-[#5D5FEF] text-white text-xs px-3 py-1 rounded-full pulse-animation">Most Popular</span>
+                </div>
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold">Wedding Photography - Platinum</h3>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-2xl font-bold text-[#5D5FEF]">$2,500</span>
+                        <span class="text-gray-500">12 hours</span>
+                    </div>
+                    <p class="mt-3 text-gray-700">Premium wedding package including engagement session, two photographers, all edited digital photos, online gallery, and custom photo album.</p>
+                    <button class="mt-4 btn-primary py-2 px-4 rounded-lg w-full">Book This Service</button>
+                </div>
+            </div>
+
+            <div class="service-card bg-white rounded-lg shadow-md overflow-hidden" data-category="weddings">
+                <img src="https://via.placeholder.com/300" alt="Wedding Photography" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold">Wedding Photography - Gold</h3>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-2xl font-bold text-[#5D5FEF]">$1,800</span>
+                        <span class="text-gray-500">10 hours</span>
+                    </div>
+                    <p class="mt-3 text-gray-700">Complete wedding day coverage with one photographer, edited digital photos, and online gallery.</p>
+                    <button class="mt-4 btn-primary py-2 px-4 rounded-lg w-full">Book This Service</button>
+                </div>
+            </div>
+
+            <div class="service-card bg-white rounded-lg shadow-md overflow-hidden" data-category="weddings">
+                <img src="https://via.placeholder.com/300" alt="Wedding Photography" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold">Wedding Photography - Silver</h3>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-2xl font-bold text-[#5D5FEF]">$1,200</span>
+                        <span class="text-gray-500">8 hours</span>
+                    </div>
+                    <p class="mt-3 text-gray-700">Wedding day coverage including edited digital photos and online gallery.</p>
+                    <button class="mt-4 btn-primary py-2 px-4 rounded-lg w-full">Book This Service</button>
+                </div>
+            </div>
+
+            <!-- Portrait Services -->
+            <div class="service-card bg-white rounded-lg shadow-md overflow-hidden" data-category="portraits">
+                <img src="https://via.placeholder.com/300" alt="Family Portrait Session" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold">Family Portrait Session</h3>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-2xl font-bold text-[#5D5FEF]">$450</span>
+                        <span class="text-gray-500">2 hours</span>
+                    </div>
+                    <p class="mt-3 text-gray-700">Outdoor family portrait session with up to 6 people. Includes 25 edited digital images and printing rights.</p>
+                    <button class="mt-4 btn-primary py-2 px-4 rounded-lg w-full">Book This Service</button>
+                </div>
+            </div>
+
+            <div class="service-card bg-white rounded-lg shadow-md overflow-hidden" data-category="portraits">
+                <img src="https://via.placeholder.com/300" alt="Individual Portrait Session" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold">Individual Portrait Session</h3>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-2xl font-bold text-[#5D5FEF]">$350</span>
+                        <span class="text-gray-500">1.5 hours</span>
+                    </div>
+                    <p class="mt-3 text-gray-700">Individual portrait session perfect for headshots, graduation photos, or personal branding. Includes 15 edited digital images.</p>
+                    <button class="mt-4 btn-primary py-2 px-4 rounded-lg w-full">Book This Service</button>
+                </div>
+            </div>
+
+            <!-- Event Services -->
+            <div class="service-card bg-white rounded-lg shadow-md overflow-hidden" data-category="events">
+                <img src="https://via.placeholder.com/300" alt="Corporate Event Coverage" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold">Corporate Event Coverage</h3>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-2xl font-bold text-[#5D5FEF]">$700</span>
+                        <span class="text-gray-500">6 hours</span>
+                    </div>
+                    <p class="mt-3 text-gray-700">Professional photography for corporate events, conferences, and business meetings with 24-hour turnaround for key shots.</p>
+                    <button class="mt-4 btn-primary py-2 px-4 rounded-lg w-full">Book This Service</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Show More Button -->
+        <div class="text-center mt-8">
+            <button class="bg-white border-2 border-[#5D5FEF] text-[#5D5FEF] font-medium py-2 px-6 rounded-lg hover:bg-[#5D5FEF]/5 transition-colors flex items-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                Show More Services (6 more)
+            </button>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+                Client Reviews
+            </h2>
+            <div class="flex items-center bg-[#5D5FEF]/10 px-4 py-2 rounded-lg">
+                <span class="text-yellow-500 text-xl mr-1">★</span>
+                <span class="font-medium text-xl">4.9</span>
+                <span class="text-gray-500 ml-2">(48 reviews)</span>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Review 1 -->
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center">
+                        <img src="https://via.placeholder.com/50" alt="Client" class="w-12 h-12 rounded-full object-cover border-2 border-[#5D5FEF]">
+                        <div class="ml-4">
+                            <h4 class="font-semibold">Jessica Miller</h4>
+                            <p class="text-gray-500 text-sm">June 2023</p>
+                        </div>
+                    </div>
+                    <div class="text-yellow-500">★★★★★</div>
+                </div>
+                <p class="mt-4 text-gray-700">
+                    Sarah was amazing! She captured our wedding day beautifully and made everyone feel comfortable. The photos exceeded our expectations, and she delivered them faster than promised. Highly recommend her services!
+                </p>
+                <div class="mt-4 flex gap-2 overflow-x-auto pb-2">
+                    <img src="https://via.placeholder.com/100" alt="Review photo" class="h-16 w-16 rounded-md object-cover">
+                    <img src="https://via.placeholder.com/100" alt="Review photo" class="h-16 w-16 rounded-md object-cover">
+                    <img src="https://via.placeholder.com/100" alt="Review photo" class="h-16 w-16 rounded-md object-cover">
+                </div>
+            </div>
+
+            <!-- Review 2 -->
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center">
+                        <img src="https://via.placeholder.com/50" alt="Client" class="w-12 h-12 rounded-full object-cover border-2 border-[#5D5FEF]">
+                        <div class="ml-4">
+                            <h4 class="font-semibold">Michael Thompson</h4>
+                            <p class="text-gray-500 text-sm">April 2023</p>
+                        </div>
+                    </div>
+                    <div class="text-yellow-500">★★★★★</div>
+                </div>
+                <p class="mt-4 text-gray-700">
+                    We hired Sarah for our company's annual gala, and she did an incredible job. She was professional, unobtrusive, and captured all the key moments. The quality of her work is outstanding.
+                </p>
+                <div class="mt-4 flex gap-2 overflow-x-auto pb-2">
+                    <img src="https://via.placeholder.com/100" alt="Review photo" class="h-16 w-16 rounded-md object-cover">
+                    <img src="https://via.placeholder.com/100" alt="Review photo" class="h-16 w-16 rounded-md object-cover">
+                </div>
+            </div>
+
+            <!-- Review 3 -->
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center">
+                        <img src="https://via.placeholder.com/50" alt="Client" class="w-12 h-12 rounded-full object-cover border-2 border-[#5D5FEF]">
+                        <div class="ml-4">
+                            <h4 class="font-semibold">Amanda Davis</h4>
+                            <p class="text-gray-500 text-sm">March 2023</p>
+                        </div>
+                    </div>
+                    <div class="text-yellow-500">★★★★<span class="text-gray-300">★</span></div>
+                </div>
+                <p class="mt-4 text-gray-700">
+                    Sarah did our family photos and was great with our kids. She was patient and creative, and the photos turned out beautifully. The only reason for 4 stars instead of 5 is that it took a bit longer than expected to get the final photos.
+                </p>
+            </div>
+        </div>
+
+        <!-- Show More Reviews Button -->
+        <div class="text-center mt-8">
+            <button class="bg-white border-2 border-[#5D5FEF] text-[#5D5FEF] font-medium py-2 px-6 rounded-lg hover:bg-[#5D5FEF]/5 transition-colors flex items-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                Load More Reviews (45 more)
+            </button>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="mt-12 mb-12">
+        <h2 class="text-2xl font-bold mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Frequently Asked Questions
+        </h2>
+
+        <div class="space-y-4">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <button class="flex justify-between items-center w-full text-left focus:outline-none">
+                    <h3 class="text-lg font-semibold">How far in advance should I book your services?</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div class="mt-3 text-gray-700">
+                    <p>For weddings, I recommend booking 8-12 months in advance to ensure availability, especially for peak season dates (May-October). For portrait sessions and smaller events, 4-6 weeks notice is usually sufficient, but earlier booking is always better to secure your preferred date.</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <button class="flex justify-between items-center w-full text-left focus:outline-none">
+                    <h3 class="text-lg font-semibold">What is your cancellation policy?</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div class="mt-3 text-gray-700">
+                    <p>The retainer fee is non-refundable as it reserves your date. For cancellations made 60+ days before the event, any additional payments made will be refunded. For cancellations within 30-60 days, 50% of payments made beyond the retainer will be refunded. Cancellations less than 30 days before the event are not eligible for refunds.</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <button class="flex justify-between items-center w-full text-left focus:outline-none">
+                    <h3 class="text-lg font-semibold">How and when will I receive my photos?</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div class="mt-3 text-gray-700">
+                    <p>For weddings, you'll receive a selection of preview images within 1 week, with the complete gallery delivered within 6-8 weeks. Portrait sessions and events are typically delivered within 2-3 weeks. All photos are provided through a password-protected online gallery where you can download high-resolution images and share with friends and family.</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <button class="flex justify-between items-center w-full text-left focus:outline-none">
+                    <h3 class="text-lg font-semibold">Do you travel for photoshoots?</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div class="mt-3 text-gray-700">
+                    <p>Yes! I'm available for travel throughout the New York area at no additional cost. For destinations beyond a 50-mile radius from New York City, additional travel fees apply to cover transportation, accommodation, and travel time. I'm also available for destination weddings worldwide.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="mt-12 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+        <div class="md:flex">
+            <div class="md:w-1/2 p-8">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Get in Touch
+                </h2>
+                <p class="text-gray-700 mb-6">
+                    Have a question or ready to book? Fill out the form and I'll get back to you within 24 hours.
+                </p>
+
+                <form class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                            <input type="text" id="name" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#5D5FEF] focus:border-[#5D5FEF] focus:outline-none transition">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#5D5FEF] focus:border-[#5D5FEF] focus:outline-none transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="service" class="block text-sm font-medium text-gray-700 mb-1">Interested In</label>
+                        <select id="service" name="service" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#5D5FEF] focus:border-[#5D5FEF] focus:outline-none transition">
+                            <option value="" selected disabled>Select a service</option>
+                            <option value="wedding">Wedding Photography</option>
+                            <option value="portrait">Portrait Session</option>
+                            <option value="event">Event Coverage</option>
+                            <option value="commercial">Commercial Photography</option>
+                            <option value="other">Other Inquiry</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Your Message</label>
+                        <textarea id="message" name="message" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#5D5FEF] focus:border-[#5D5FEF] focus:outline-none transition"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary py-3 px-6 rounded-lg w-full flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Send Message
+                    </button>
+                </form>
+            </div>
+
+            <div class="md:w-1/2 relative gradient-bg">
+                <div class="absolute inset-0 bg-[#5D5FEF] opacity-10"></div>
+                <div class="relative h-full flex flex-col justify-center p-8">
+                    <div class="bg-white/90 p-6 rounded-xl shadow-lg pulse-animation">
+                        <h3 class="text-xl font-semibold mb-4 text-[#5D5FEF]">Contact Information</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <span>(555) 123-4567</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <span>sarah@johnsongphotography.com</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-[#5D5FEF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>New York, NY</span>
+                            </div>
+                        </div>
+
+                        <h3 class="text-xl font-semibold mt-6 mb-4 text-[#5D5FEF]">Business Hours</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Monday - Friday:</span>
+                                <span>9:00 AM - 6:00 PM</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Saturday:</span>
+                                <span>10:00 AM - 4:00 PM</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Sunday:</span>
+                                <span>Closed</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex space-x-4">
+                            <a href="#" class="bg-[#5D5FEF] text-white p-2 rounded-full hover:bg-[#4b4cbe] transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="bg-[#5D5FEF] text-white p-2 rounded-full hover:bg-[#4b4cbe] transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="bg-[#5D5FEF] text-white p-2 rounded-full hover:bg-[#4b4cbe] transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.1 10.1 0 01-3.127 1.184 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Floating Buttons -->
+<div class="fixed bottom-8 right-8 flex flex-col space-y-4">
+    <button class="bg-[#5D5FEF] text-white p-4 rounded-full shadow-lg hover:bg-[#4b4cbe] transition-colors float-animation">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+    </button>
+    <button class="bg-white border-2 border-[#5D5FEF] text-[#5D5FEF] p-4 rounded-full shadow-lg hover:bg-[#5D5FEF]/5 transition-colors float-animation" style="animation-delay: 0.3s">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        </svg>
+    </button>
+</div>
+
+<footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <p class="text-gray-600">© 2023 Sarah Johnson Photography. All rights reserved.</p>
+            </div>
+            <div class="flex space-x-6">
+                <a href="#" class="text-gray-600 hover:text-[#5D5FEF]">Privacy Policy</a>
+                <a href="#" class="text-gray-600 hover:text-[#5D5FEF]">Terms of Service</a>
+                <a href="#" class="text-gray-600 hover:text-[#5D5FEF]">Cookie Policy</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Add interactive functionality here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Service tabs functionality
+        const serviceTabs = document.querySelectorAll('.service-tab');
+        serviceTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                serviceTabs.forEach(t => t.classList.remove('active'));
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Filter services by category (can be expanded with actual filtering)
+                const category = this.innerText.toLowerCase().split('(')[0].trim();
+                console.log(`Filtering for category: ${category}`);
+
+                // Here you would filter the services based on the selected category
+                // This is just a placeholder for actual filtering functionality
+            });
+        });
+
+        // FAQ accordion functionality
+        const faqButtons = document.querySelectorAll('.faq-button');
+        faqButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                const icon = this.querySelector('svg');
+
+                // Toggle content visibility
+                content.classList.toggle('hidden');
+
+                // Rotate icon
+                if (content.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // Animation for elements as they come into view
+        const animateOnScroll = function() {
+            const elements = document.querySelectorAll('.service-card, .gallery-image');
+
+            elements.forEach(element => {
+                const position = element.getBoundingClientRect();
+
+                // If element is in viewport
+                if(position.top < window.innerHeight && position.bottom >= 0) {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }
+            });
+        };
+
+        // Set initial state for scroll animations
+        document.querySelectorAll('.service-card, .gallery-image').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        });
+
+        // Run animation when page loads and on scroll
+        window.addEventListener('load', animateOnScroll);
+        window.addEventListener('scroll', animateOnScroll);
+    });
+</script>
+<script src="portfolio.js"></script>
+</body>
 </html>
