@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Service.Impl;
 
-
 import com.Eventura.Eventura.DTO.PortfolioDTO;
 import com.Eventura.Eventura.ExceptionHandler.ResourceNotFoundException;
 import com.Eventura.Eventura.Mapper.PortfolioMapper;
@@ -55,6 +54,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         existing.setDescription(dto.getDescription());
         existing.setCategory(dto.getCategory());
         existing.setClientDetails(dto.getClientDetails());
+        existing.setPhoto(dto.getPhoto());
         existing.setServiceProvider(provider);
 
         return PortfolioMapper.toDTO(repository.save(existing));
@@ -66,5 +66,14 @@ public class PortfolioServiceImpl implements PortfolioService {
             throw new ResourceNotFoundException("Portfolio not found");
         }
         repository.deleteById(id);
+    }
+
+    // ✅ New method
+    @Override
+    public List<PortfolioDTO> getByServiceProviderId(Long serviceProviderId) {
+        return repository.findAll().stream()
+                .filter(p -> p.getServiceProvider().getId().equals(serviceProviderId))
+                .map(PortfolioMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Contoller;
 
-
 import com.Eventura.Eventura.DTO.EventsDTO;
 import com.Eventura.Eventura.Service.EventService;
 import lombok.RequiredArgsConstructor;
@@ -40,5 +39,11 @@ public class EventsController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         eventService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ✅ New: Get all events for a specific service provider
+    @GetMapping("/by-provider/{serviceProviderId}")
+    public ResponseEntity<List<EventsDTO>> getByServiceProvider(@PathVariable Long serviceProviderId) {
+        return ResponseEntity.ok(eventService.getByProviderId(serviceProviderId));
     }
 }

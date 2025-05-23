@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Service.Impl;
 
-
 import com.Eventura.Eventura.DTO.EventsDTO;
 import com.Eventura.Eventura.ExceptionHandler.ResourceNotFoundException;
 import com.Eventura.Eventura.Mapper.EventsMapper;
@@ -56,6 +55,7 @@ public class EventServiceImpl implements EventService {
         existing.setDescription(dto.getDescription());
         existing.setEventType(dto.getEventType());
         existing.setPrice(dto.getPrice());
+        existing.setPhoto(dto.getPhoto()); // ✅ Add photo update
         existing.setServiceProvider(provider);
 
         return EventsMapper.toDTO(eventsRepository.save(existing));
@@ -67,5 +67,13 @@ public class EventServiceImpl implements EventService {
             throw new ResourceNotFoundException("Event not found");
         }
         eventsRepository.deleteById(id);
+    }
+
+    // ✅ Added: Get all events by service provider
+    public List<EventsDTO> getByProviderId(Long providerId) {
+        return eventsRepository.findAllByServiceProvider_Id(providerId)
+                .stream()
+                .map(EventsMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

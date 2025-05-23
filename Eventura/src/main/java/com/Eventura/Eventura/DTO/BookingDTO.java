@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.DTO;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +17,9 @@ public class BookingDTO {
     private String paymentRefNumber;
     private Boolean booked;
     private Long eventId;
+    private String eventName;
     private Long userId;
+    private String userEmail;
     private Long customerId;
+    private String status;
 }
