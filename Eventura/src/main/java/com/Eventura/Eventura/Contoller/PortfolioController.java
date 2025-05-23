@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Contoller;
 
-
 import com.Eventura.Eventura.DTO.PortfolioDTO;
 import com.Eventura.Eventura.Service.PortfolioService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,11 @@ public class PortfolioController {
     @GetMapping("/{id}")
     public ResponseEntity<PortfolioDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(portfolioService.getById(id));
+    }
+
+    @GetMapping("/by-provider/{serviceProviderId}")
+    public ResponseEntity<List<PortfolioDTO>> getByServiceProviderId(@PathVariable Long serviceProviderId) {
+        return ResponseEntity.ok(portfolioService.getByServiceProviderId(serviceProviderId));
     }
 
     @PutMapping("/{id}")

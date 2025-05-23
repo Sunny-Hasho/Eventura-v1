@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Entity
 @Data
 @NoArgsConstructor
@@ -25,6 +24,10 @@ public class Portfolio {
     private String category;
 
     private String clientDetails;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT") // ✅ for storing large base64 image
+    private String photo;
 
     @ManyToOne
     @JoinColumn(name = "service_provider_id")

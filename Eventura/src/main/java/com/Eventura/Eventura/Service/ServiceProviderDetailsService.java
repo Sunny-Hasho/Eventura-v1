@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Service;
 
-
 import com.Eventura.Eventura.DTO.ServiceProviderDetailsDTO;
 
 import java.util.List;
@@ -11,4 +10,7 @@ public interface ServiceProviderDetailsService {
     ServiceProviderDetailsDTO getById(Long id);
     ServiceProviderDetailsDTO update(Long id, ServiceProviderDetailsDTO dto);
     void delete(Long id);
+
+    // ✅ Added method
+    ServiceProviderDetailsDTO getByServiceProviderId(Long serviceProviderId);
 }

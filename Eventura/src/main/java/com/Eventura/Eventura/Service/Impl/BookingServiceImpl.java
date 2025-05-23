@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Service.Impl;
 
-
 import com.Eventura.Eventura.DTO.BookingDTO;
 import com.Eventura.Eventura.ExceptionHandler.ResourceNotFoundException;
 import com.Eventura.Eventura.Mapper.BookingMapper;
@@ -29,8 +28,14 @@ public class BookingServiceImpl implements BookingService {
     public BookingDTO create(BookingDTO dto) {
         Events event = eventsRepository.findById(dto.getEventId())
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (dto.getStatus() == null || dto.getStatus().isBlank()) {
+            dto.setStatus("PENDING");
+        }
+
         Booking saved = bookingRepository.save(BookingMapper.toEntity(dto, event, user));
         return BookingMapper.toDTO(saved);
     }
@@ -65,9 +70,9 @@ public class BookingServiceImpl implements BookingService {
         existing.setEvent(event);
         existing.setUser(user);
         existing.setCustomerId(dto.getCustomerId());
+        existing.setStatus(dto.getStatus());
 
-        Booking updated = bookingRepository.save(existing);
-        return BookingMapper.toDTO(updated);
+        return BookingMapper.toDTO(bookingRepository.save(existing));
     }
 
     @Override
@@ -76,5 +81,21 @@ public class BookingServiceImpl implements BookingService {
             throw new ResourceNotFoundException("Booking not found");
         }
         bookingRepository.deleteById(id);
+    }
+
+    @Override
+    public BookingDTO updateStatus(Long bookingId, String newStatus) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        booking.setStatus(newStatus.toUpperCase());
+        return BookingMapper.toDTO(bookingRepository.save(booking));
+    }
+
+    @Override
+    public List<BookingDTO> getByServiceProviderId(Long providerId) {
+        return bookingRepository.findAllByEvent_ServiceProvider_Id(providerId).stream()
+                .map(BookingMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

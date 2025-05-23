@@ -16,4 +16,5 @@ public class EventsDTO {
     private String eventType;
     private Integer price;
     private Long serviceProviderId;
+    private String photo; // ✅ Base64 image
 }

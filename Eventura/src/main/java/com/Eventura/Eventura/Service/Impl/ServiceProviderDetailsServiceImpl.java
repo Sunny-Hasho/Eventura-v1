@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Service.Impl;
 
-
 import com.Eventura.Eventura.DTO.ServiceProviderDetailsDTO;
 import com.Eventura.Eventura.ExceptionHandler.ResourceNotFoundException;
 import com.Eventura.Eventura.Mapper.ServiceProviderDetailsMapper;
@@ -73,5 +72,15 @@ public class ServiceProviderDetailsServiceImpl implements ServiceProviderDetails
             throw new ResourceNotFoundException("Details not found");
         }
         repository.deleteById(id);
+    }
+
+    // ✅ New method to get by service provider ID
+    @Override
+    public ServiceProviderDetailsDTO getByServiceProviderId(Long serviceProviderId) {
+        ServiceProviderDetails details = repository.findAll().stream()
+                .filter(d -> d.getServiceProvider().getId().equals(serviceProviderId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Details not found for provider ID " + serviceProviderId));
+        return ServiceProviderDetailsMapper.toDTO(details);
     }
 }

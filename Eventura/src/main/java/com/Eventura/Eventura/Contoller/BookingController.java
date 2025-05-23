@@ -1,7 +1,5 @@
 package com.Eventura.Eventura.Contoller;
 
-
-
 import com.Eventura.Eventura.DTO.BookingDTO;
 import com.Eventura.Eventura.Service.BookingService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +33,18 @@ public class BookingController {
     @PutMapping("/{id}")
     public ResponseEntity<BookingDTO> update(@PathVariable Long id, @RequestBody BookingDTO dto) {
         return ResponseEntity.ok(bookingService.update(id, dto));
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<BookingDTO> updateStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        return ResponseEntity.ok(bookingService.updateStatus(id, status));
+    }
+
+    @GetMapping("/by-provider/{serviceProviderId}")
+    public ResponseEntity<List<BookingDTO>> getByServiceProvider(@PathVariable Long serviceProviderId) {
+        return ResponseEntity.ok(bookingService.getByServiceProviderId(serviceProviderId));
     }
 
     @DeleteMapping("/{id}")

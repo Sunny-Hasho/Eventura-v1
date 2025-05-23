@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Entity
 @Data
 @Table(name = "events_")
@@ -26,6 +25,10 @@ public class Events {
     private String eventType;
 
     private Integer price;
+
+    @Lob
+    @Column(name = "photo", columnDefinition = "LONGTEXT") // ✅ base64 event image
+    private String photo;
 
     @ManyToOne
     @JoinColumn(name = "service_provider_id")

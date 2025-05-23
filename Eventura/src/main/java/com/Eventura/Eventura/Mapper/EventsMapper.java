@@ -1,6 +1,5 @@
 package com.Eventura.Eventura.Mapper;
 
-
 import com.Eventura.Eventura.DTO.EventsDTO;
 import com.Eventura.Eventura.Model.Events;
 import com.Eventura.Eventura.Model.ServiceProvider;
@@ -16,6 +15,7 @@ public class EventsMapper {
                 .description(events.getDescription())
                 .eventType(events.getEventType())
                 .price(events.getPrice())
+                .photo(events.getPhoto()) // ✅ Add photo to DTO
                 .serviceProviderId(events.getServiceProvider() != null ? events.getServiceProvider().getId() : null)
                 .build();
     }
@@ -27,6 +27,7 @@ public class EventsMapper {
                 .description(dto.getDescription())
                 .eventType(dto.getEventType())
                 .price(dto.getPrice())
+                .photo(dto.getPhoto()) // ✅ Set photo from DTO
                 .serviceProvider(serviceProvider)
                 .build();
     }

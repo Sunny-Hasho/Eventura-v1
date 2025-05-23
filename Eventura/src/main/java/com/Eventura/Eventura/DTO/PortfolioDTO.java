@@ -15,5 +15,6 @@ public class PortfolioDTO {
     private String description;
     private String category;
     private String clientDetails;
+    private String photo; // ✅ This line is REQUIRED
     private Long serviceProviderId;
 }
