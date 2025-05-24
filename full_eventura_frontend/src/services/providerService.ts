@@ -206,4 +206,12 @@ export const providerService = {
       throw new Error("Failed to get provider");
     }
   }
-}; 
+};
+
+function getDriveImageUrl(url: string) {
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+  if (match) {
+    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  }
+  return url;
+} 

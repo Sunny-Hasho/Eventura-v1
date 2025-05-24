@@ -5,9 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { pitchService } from "@/services/pitchService";
 import { serviceRequestService } from "@/services/serviceRequestService";
 import { userService } from "@/services/userService";
+import { portfolioService } from "@/services/portfolioService";
 import { PitchResponse } from "@/types/pitch";
 import { ServiceRequestResponse } from "@/types/serviceRequest";
 import { UserResponse } from "@/types/user";
+import { PortfolioResponse } from "@/types/portfolio";
 import { format } from "date-fns";
 import { ArrowLeft, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -43,6 +45,10 @@ const RequestPitches = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [isAssigning, setIsAssigning] = useState(false);
   const [providerDetails, setProviderDetails] = useState<Record<number, UserResponse>>({});
+  const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
+  const [portfolio, setPortfolio] = useState<PortfolioResponse[]>([]);
   const pageSize = 10;
 
   useEffect(() => {
@@ -141,6 +147,22 @@ const RequestPitches = () => {
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+  };
+
+  const handleViewPortfolio = async (userId: number) => {
+    setPortfolioLoading(true);
+    setPortfolioError(null);
+    setIsPortfolioOpen(true);
+    try {
+      // Get providerId by userId
+      const providerId = await portfolioService.getProviderIdByUserId(userId);
+      const page = await portfolioService.getProviderPortfolios(providerId, 0, 10);
+      setPortfolio(page.content);
+    } catch (err) {
+      setPortfolioError(err instanceof Error ? err.message : "Failed to fetch portfolio");
+    } finally {
+      setPortfolioLoading(false);
+    }
   };
 
   if (!authState.isAuthenticated) {
@@ -296,6 +318,14 @@ const RequestPitches = () => {
                   <p className="text-xs text-gray-500">
                     {providerDetails[selectedPitch.providerId]?.mobileNumber ? `Mobile: ${providerDetails[selectedPitch.providerId]?.mobileNumber}` : ""}
                   </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => handleViewPortfolio(providerDetails[selectedPitch.providerId]?.id || selectedPitch.providerId)}
+                  >
+                    View Portfolio
+                  </Button>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Proposed Price</p>
@@ -336,6 +366,42 @@ const RequestPitches = () => {
                   Close
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Portfolio Dialog */}
+      <Dialog open={isPortfolioOpen} onOpenChange={setIsPortfolioOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Provider Portfolio</DialogTitle>
+            <DialogDescription>Projects and work by this provider</DialogDescription>
+          </DialogHeader>
+          {portfolioLoading ? (
+            <div className="py-8 text-center">Loading portfolio...</div>
+          ) : portfolioError ? (
+            <div className="py-8 text-center text-red-500">{portfolioError}</div>
+          ) : portfolio.length === 0 ? (
+            <div className="py-8 text-center text-gray-500">No portfolio items found.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {portfolio.map((item) => (
+                <div key={item.id} className="border rounded-lg overflow-hidden bg-white">
+                  <div className="aspect-video relative">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg">{item.title}</h3>
+                    <p className="text-sm text-gray-500 mb-2">{item.projectDate} • {item.eventType}</p>
+                    <p className="text-gray-700 text-sm mb-2">{item.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </DialogContent>

@@ -161,7 +161,7 @@ const ServiceRequests = () => {
                 <span className="font-medium">Location:</span> {request.location}
               </div>
               <div className="flex items-center justify-between mt-4">
-                <div className="font-bold text-base">${request.budget.toLocaleString()}</div>
+                <div className="font-bold text-base">Rs. {request.budget.toLocaleString()}</div>
                 <Button className="rounded-lg px-4 py-2" onClick={() => handleRequestClick(request.id)}>
                   Apply now
                 </Button>
