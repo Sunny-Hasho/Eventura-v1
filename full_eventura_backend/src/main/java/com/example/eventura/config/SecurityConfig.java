@@ -40,13 +40,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/providers").permitAll() // Allow public access to list providers
                         .requestMatchers("/api/providers/{providerId}").hasAnyRole("CLIENT", "PROVIDER", "ADMIN") // Allow CLIENT, PROVIDER, ADMIN to get provider profile by ID
-                        .requestMatchers("/api/providers/**").hasAnyRole("PROVIDER", "ADMIN") // Restrict other provider endpoints to PROVIDER, ADMIN
+                        .requestMatchers("/api/providers/**").hasAnyRole("PROVIDER", "ADMIN","CLIENT") // Restrict other provider endpoints to PROVIDER, ADMIN
                         .requestMatchers("/api/requests/**").hasAnyRole("CLIENT", "ADMIN", "PROVIDER")
                         .requestMatchers("/api/pitches/**").hasAnyRole("PROVIDER", "CLIENT", "ADMIN")
                         .requestMatchers("/api/payments/**").hasAnyRole("CLIENT", "PROVIDER", "ADMIN")
                         .requestMatchers("/api/reviews/**").hasAnyRole("CLIENT", "ADMIN")
                         .requestMatchers("/api/notifications/**").hasAnyRole("CLIENT", "PROVIDER", "ADMIN")
-                        .requestMatchers("/api/portfolios/**").hasAnyRole("PROVIDER", "ADMIN")
+                        .requestMatchers("/api/portfolios/**").hasAnyRole("PROVIDER", "ADMIN","CLIENT")
                         .requestMatchers("/api/verifications/**").hasAnyRole("PROVIDER", "ADMIN")
                         .requestMatchers("/api/users/profile", "/api/users/{userId}").authenticated()
                         .anyRequest().authenticated()

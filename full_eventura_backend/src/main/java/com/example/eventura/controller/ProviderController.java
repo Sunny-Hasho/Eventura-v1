@@ -44,7 +44,6 @@ public class ProviderController {
         return ResponseEntity.ok(providerService.updateProviderProfile(userId, request));
     }
 
-
     // Get Own Provider Profile
     @GetMapping("/profile")
     @PreAuthorize("hasRole('PROVIDER')")
@@ -53,13 +52,12 @@ public class ProviderController {
         return ResponseEntity.ok(providerService.getOwnProviderProfile(userId));
     }
 
-    //Get ALl Providers
+    //Get All Providers
     @GetMapping
     @PreAuthorize("hasAnyRole('CLIENT', 'PROVIDER', 'ADMIN')")
     public ResponseEntity<Page<ProviderResponse>> getAllProviders(Pageable pageable) {
         return ResponseEntity.ok(providerService.getAllProviders(pageable));
     }
-
 
     // Get Provider by ID (Accessible to CLIENT, PROVIDER, and ADMIN roles)
     @GetMapping("/{providerId}")
@@ -68,6 +66,12 @@ public class ProviderController {
         return ResponseEntity.ok(providerService.getProviderProfile(providerId));
     }
 
+    //Get Provider ID by User ID
+    @GetMapping("/by-user/{userId}")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN', 'PROVIDER')")
+    public ResponseEntity<Long> getProviderIdByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(providerService.getProviderIdByUserId(userId));
+    }
 
     //Provider Post Documents To Verified
     @PostMapping("/{providerId}/documents")
@@ -93,6 +97,7 @@ public class ProviderController {
 
     //Get Portfolio By Provider ID
     @GetMapping("/{providerId}/portfolios")
+    @PreAuthorize("hasAnyRole('CLIENT', 'PROVIDER', 'ADMIN')")
     public ResponseEntity<Page<PortfolioResponse>> getPortfolios(@PathVariable Long providerId, Pageable pageable) {
         return ResponseEntity.ok(providerService.getPortfolios(providerId, pageable));
     }

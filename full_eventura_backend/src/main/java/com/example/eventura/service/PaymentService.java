@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import jakarta.mail.MessagingException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public PaymentResponse createPayment(PaymentRequest request, String email) {
         User client = userRepository.findByEmail(email);
@@ -96,6 +98,7 @@ public class PaymentService {
             throw new ResourceNotFoundException("User not found");
         }
 
+        System.out.println("payment updated status  huu");
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
 
@@ -108,9 +111,22 @@ public class PaymentService {
 
         if (status == Payment.PaymentStatus.COMPLETED) {
             User provider = payment.getProvider();
-            String message = String.format("Payment for service request: %s has been completed",
-                    payment.getRequest().getTitle());
-            notificationService.createNotification(provider, message);
+            User client = payment.getClient();
+            ServiceRequest request = payment.getRequest();
+
+            System.out.println("completee meessssaaggeeee");
+            // Notify provider
+            String providerMessage = String.format("You received a payment of Rs %s for service request: %s from %s %s",
+                    payment.getAmount(), request.getTitle(), client.getFirstName(), client.getLastName());
+            notificationService.createNotification(provider, providerMessage);
+
+
+
+            // Notify client
+            String clientMessage = String.format("Your payment of Rs %s for service request: %s was successful",
+                    payment.getAmount(), request.getTitle());
+            notificationService.createNotification(client, clientMessage);
+
         }
 
         return convertToResponse(updatedPayment);

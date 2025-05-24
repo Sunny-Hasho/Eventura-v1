@@ -112,6 +112,45 @@ public class RequestService {
         return convertToResponse(updatedRequest);
     }
 
+    public ServiceRequestResponse updateBudget(Long requestId, Double budget, Long clientId) {
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+
+        if (!client.getRole().equals(User.Role.CLIENT)) {
+            throw new UnauthorizedException("Only clients can update the budget");
+        }
+
+        if (!serviceRequest.getClient().getId().equals(clientId)) {
+            throw new UnauthorizedException("Client does not own this request");
+        }
+
+        if (budget == null || budget <= 0) {
+            throw new IllegalArgumentException("Budget must be a positive value");
+        }
+
+        if (serviceRequest.getStatus() == ServiceRequest.Status.COMPLETED ||
+                serviceRequest.getStatus() == ServiceRequest.Status.CANCELLED ||
+                serviceRequest.getStatus() == ServiceRequest.Status.DELETED) {
+            throw new IllegalStateException("Cannot update budget for a request in " + serviceRequest.getStatus() + " status");
+        }
+
+        serviceRequest.setBudget(budget);
+        ServiceRequest updatedRequest = serviceRequestRepository.save(serviceRequest);
+
+        // Send notification to the assigned provider, if any
+        if (serviceRequest.getAssignedProvider() != null) {
+            String message = String.format("The budget for the service request: %s has been updated to $%.2f by %s %s",
+                    serviceRequest.getTitle(), budget, client.getFirstName(), client.getLastName());
+            notificationService.createNotification(serviceRequest.getAssignedProvider(), message);
+        }
+
+        return convertToResponse(updatedRequest);
+    }
+
+
     public ServiceRequestResponse updateRequestStatus(Long requestId, String status, Long userId) {
         ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));

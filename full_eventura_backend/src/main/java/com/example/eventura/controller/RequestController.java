@@ -67,6 +67,18 @@ public class RequestController {
         return ResponseEntity.ok(requestService.assignProvider(requestId, providerId, clientId));
     }
 
+    //Update Budget of a Request
+    @PutMapping("/{requestId}/budget")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ServiceRequestResponse> updateBudget(
+            @PathVariable Long requestId,
+            @RequestBody Double budget,
+            @RequestHeader("Authorization") String authHeader) {
+        Long clientId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(requestService.updateBudget(requestId, budget, clientId));
+    }
+
+
     //Set Request Status OPEN, ASSIGNED, COMPLETED, CANCELLED, DELETED
     @PutMapping("/{requestId}/status")
     @PreAuthorize("hasRole('CLIENT') or hasRole('PROVIDER')")

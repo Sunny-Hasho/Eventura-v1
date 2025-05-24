@@ -57,8 +57,6 @@ public class ProviderService {
         return convertToResponse(savedProvider);
     }
 
-
-
     public ProviderResponse updateProviderProfile(Long userId, ProviderProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -88,21 +86,12 @@ public class ProviderService {
 
         ServiceProvider updatedProvider = serviceProviderRepository.save(provider);
 
-//        // Send email notification for provider profile update
-//        try {
-//            emailService.sendProfileUpdateEmail(user.getEmail(), "Provider Profile Updated",
-//                    user.getFirstName(), user.getLastName(), provider.getCompanyName());
-//        } catch (MessagingException e) {
-//            logger.error("Failed to send provider profile update email to {}: {}", user.getEmail(), e.getMessage());
-//        }
-
         // Send normal notification
         String notificationMessage = String.format("Your provider profile for %s has been updated", provider.getCompanyName());
         notificationService.createNotification(user, notificationMessage);
 
         return convertToResponse(updatedProvider);
     }
-
 
     public ProviderResponse getOwnProviderProfile(Long userId) {
         User user = userRepository.findById(userId)
@@ -125,11 +114,26 @@ public class ProviderService {
                 .map(this::convertToResponse);
     }
 
-    // Accessible to CLIENT, PROVIDER, and ADMIN roles as per SecurityConfig and Controller
     public ProviderResponse getProviderProfile(Long providerId) {
         ServiceProvider provider = serviceProviderRepository.findById(providerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
         return convertToResponse(provider);
+    }
+
+    public Long getProviderIdByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.getRole().equals(User.Role.PROVIDER)) {
+            throw new UnauthorizedException("User is not a provider");
+        }
+
+        ServiceProvider provider = serviceProviderRepository.findByUser(user);
+        if (provider == null) {
+            throw new ResourceNotFoundException("Provider profile not found for user");
+        }
+
+        return provider.getId();
     }
 
     public VerificationDocumentResponse uploadDocument(Long providerId, VerificationDocumentRequest request) {
@@ -168,7 +172,7 @@ public class ProviderService {
 
     public PortfolioResponse createPortfolio(Long providerId, PortfolioRequest request) {
         ServiceProvider provider = serviceProviderRepository.findById(providerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not Demographics not found"));
 
         Portfolio portfolio = new Portfolio();
         portfolio.setProvider(provider);
