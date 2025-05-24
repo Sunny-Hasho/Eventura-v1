@@ -682,12 +682,15 @@ const OngoingRequests = () => {
             <form onSubmit={handlePaymentSubmit} className="w-full flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Amount</label>
-                <input
-                  type="number"
-                  value={paymentRequest?.budget || ""}
-                  readOnly
-                  className="w-full border rounded px-2 py-2 bg-gray-50 text-lg font-semibold text-center focus:outline-none"
-                />
+                <div className="flex items-center w-full border rounded bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-200">
+                  <input
+                    type="number"
+                    value={paymentRequest?.budget || ""}
+                    readOnly
+                    className="flex-1 px-2 py-2 text-lg font-semibold text-center border-0 bg-transparent focus:outline-none"
+                  />
+                  <span className="px-2 py-2 text-lg font-semibold text-gray-500">Rs</span>
+                </div>
               </div>
               <Button 
                 type="submit" 
