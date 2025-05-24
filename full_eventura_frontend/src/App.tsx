@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -22,7 +23,6 @@ import RequestPitches from "@/pages/RequestPitches";
 import OngoingRequests from "@/pages/OngoingRequests";
 import OngoingWork from "@/pages/OngoingWork";
 
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -36,18 +36,66 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/provider/profile" element={<ProviderProfile />} />
-            <Route path="/providers" element={<ProvidersList />} />
-            <Route path="/providers/:providerId" element={<ProviderDetails />} />
-            <Route path="/requests" element={<MyRequests />} />
-            <Route path="/requests/:requestId/pitches" element={<RequestPitches />} />
-            <Route path="/all-requests" element={<AllRequests />} />
-            <Route path="/create-request" element={<CreateRequest />} />
-            <Route path="/all-pitches" element={<AllPitches />} />
-            <Route path="/ongoing-requests" element={<OngoingRequests />} />
-            <Route path="/ongoing-work" element={<OngoingWork />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/provider/profile" element={
+              <ProtectedRoute requiredRole="PROVIDER">
+                <ProviderProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/providers" element={
+              <ProtectedRoute>
+                <ProvidersList />
+              </ProtectedRoute>
+            } />
+            <Route path="/providers/:providerId" element={
+              <ProtectedRoute>
+                <ProviderDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/requests" element={
+              <ProtectedRoute>
+                <MyRequests />
+              </ProtectedRoute>
+            } />
+            <Route path="/requests/:requestId/pitches" element={
+              <ProtectedRoute>
+                <RequestPitches />
+              </ProtectedRoute>
+            } />
+            <Route path="/all-requests" element={
+              <ProtectedRoute>
+                <AllRequests />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-request" element={
+              <ProtectedRoute requiredRole="CLIENT">
+                <CreateRequest />
+              </ProtectedRoute>
+            } />
+            <Route path="/all-pitches" element={
+              <ProtectedRoute requiredRole="PROVIDER">
+                <AllPitches />
+              </ProtectedRoute>
+            } />
+            <Route path="/ongoing-requests" element={
+              <ProtectedRoute requiredRole="CLIENT">
+                <OngoingRequests />
+              </ProtectedRoute>
+            } />
+            <Route path="/ongoing-work" element={
+              <ProtectedRoute requiredRole="PROVIDER">
+                <OngoingWork />
+              </ProtectedRoute>
+            } />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
