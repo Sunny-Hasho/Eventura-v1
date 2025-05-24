@@ -265,6 +265,23 @@ class ServiceRequestService {
       throw error;
     }
   }
+
+  async updateRequestBudget(requestId: number, newBudget: number): Promise<ServiceRequestResponse> {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Not authenticated");
+    const response = await fetch(`${API_URL}/api/requests/${requestId}/budget`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newBudget)
+    });
+    if (!response.ok) {
+      throw new Error("Failed to update budget");
+    }
+    return await response.json();
+  }
 }
 
 export const serviceRequestService = new ServiceRequestService(); 

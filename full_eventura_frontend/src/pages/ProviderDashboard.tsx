@@ -15,6 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { paymentService } from "@/services/paymentService";
+import { PaymentResponse } from "@/types/common";
+import { useQuery } from "@tanstack/react-query";
 
 const ProviderDashboard = () => {
   const { authState } = useAuth();
@@ -26,6 +29,16 @@ const ProviderDashboard = () => {
   const [serviceType, setServiceType] = useState<string>("ALL");
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequestResponse | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+
+  const { data: paymentsData, isLoading: isPaymentsLoading } = useQuery({
+    queryKey: ["providerPayments"],
+    queryFn: () => paymentService.getProviderPayments(0, 100),
+    enabled: authState.isAuthenticated && user?.role === "PROVIDER",
+  });
+
+  const totalEarnings = paymentsData?.content
+    ?.filter((p: PaymentResponse) => p.paymentStatus === "COMPLETED")
+    .reduce((sum: number, p: PaymentResponse) => sum + p.amount, 0) || 0;
 
   const fetchRequests = async () => {
     try {
@@ -96,6 +109,24 @@ const ProviderDashboard = () => {
             Manage your services and find new opportunities
           </p>
         </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Earnings Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Earnings</CardTitle>
+              <CardDescription>Total earnings from completed payments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center">
+                <span className="text-3xl font-bold text-green-600">
+                  {isPaymentsLoading ? "..." : `$${totalEarnings.toLocaleString()}`}
+                </span>
+                <Button className="mt-4 w-full" onClick={() => navigate("/earnings")}>View Earnings</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Available Requests */}
