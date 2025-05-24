@@ -172,7 +172,7 @@ public class ProviderService {
 
     public PortfolioResponse createPortfolio(Long providerId, PortfolioRequest request) {
         ServiceProvider provider = serviceProviderRepository.findById(providerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Provider not Demographics not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
 
         Portfolio portfolio = new Portfolio();
         portfolio.setProvider(provider);
@@ -194,6 +194,35 @@ public class ProviderService {
 
         return portfolioRepository.findByProvider(provider, pageable)
                 .map(this::convertToPortfolioResponse);
+    }
+
+    public void deletePortfolio(Long providerId, Long portfolioId, Long userId) {
+        ServiceProvider provider = serviceProviderRepository.findById(providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.getRole().equals(User.Role.PROVIDER)) {
+            throw new UnauthorizedException("Only providers can delete portfolios");
+        }
+
+        if (!provider.getUser().getId().equals(userId)) {
+            throw new UnauthorizedException("Provider does not own this portfolio");
+        }
+
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found"));
+
+        if (!portfolio.getProvider().getId().equals(providerId)) {
+            throw new UnauthorizedException("Portfolio does not belong to this provider");
+        }
+
+        portfolioRepository.delete(portfolio);
+
+        // Send notification
+        String notificationMessage = String.format("Portfolio '%s' has been deleted", portfolio.getTitle());
+        notificationService.createNotification(user, notificationMessage);
     }
 
     private void checkAndUpdateProviderVerification(ServiceProvider provider) {
