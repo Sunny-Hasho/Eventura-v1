@@ -23,7 +23,16 @@ import RequestPitches from "@/pages/RequestPitches";
 import OngoingRequests from "@/pages/OngoingRequests";
 import OngoingWork from "@/pages/OngoingWork";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchInterval: 5000, // Refetch every 5 seconds
+      refetchIntervalInBackground: true, // Continue refetching even when tab is not active
+      staleTime: 0, // Consider data stale immediately
+      retry: 1, // Only retry failed requests once
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
