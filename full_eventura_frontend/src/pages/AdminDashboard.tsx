@@ -1,12 +1,62 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import { useEffect, useState } from "react";
+import { userService, PageableUserResponse, UserResponse } from "@/services/userService";
+import { Badge } from "@/components/ui/badge";
 
 const AdminDashboard = () => {
   const { authState } = useAuth();
   const { user } = authState;
+  const [users, setUsers] = useState<PageableUserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 5;
+
+  useEffect(() => {
+    fetchUsers();
+  }, [currentPage]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await userService.getAllUsers(currentPage, pageSize);
+      setUsers(response);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "bg-red-100 text-red-800";
+      case "PROVIDER":
+        return "bg-blue-100 text-blue-800";
+      case "CLIENT":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "INACTIVE":
+        return "bg-gray-100 text-gray-800";
+      case "SUSPENDED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,6 +93,83 @@ const AdminDashboard = () => {
 
         {/* Dashboard Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* User Management Card */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>Manage platform users and their status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              {loading ? (
+                <div className="text-center py-4">Loading users...</div>
+              ) : users && users.content.length > 0 ? (
+                <div className="space-y-4">
+                  {users.content.map((user: UserResponse) => (
+                    <div key={user.id} className="p-4 border rounded-md bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {user.firstName} {user.lastName}
+                          </h3>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                          <p className="text-sm text-gray-500">{user.mobileNumber}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge className={getRoleBadgeColor(user.role)}>
+                            {user.role}
+                          </Badge>
+                          <Badge className={getStatusBadgeColor(user.accountStatus)}>
+                            {user.accountStatus}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex space-x-2">
+                        <Button variant="outline" size="sm">View Details</Button>
+                        <Button variant="outline" size="sm">Edit</Button>
+                        {user.accountStatus === "ACTIVE" ? (
+                          <Button variant="destructive" size="sm">Suspend</Button>
+                        ) : (
+                          <Button variant="default" size="sm">Activate</Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Pagination */}
+                  <div className="flex justify-between items-center mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                      disabled={currentPage === 0}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-gray-500">
+                      Page {currentPage + 1} of {users.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(p => p + 1)}
+                      disabled={currentPage >= users.totalPages - 1}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  No users found
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* User Verification */}
           <Card>
             <CardHeader>
