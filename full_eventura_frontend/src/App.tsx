@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RouteGuard from "./components/RouteGuard";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -24,6 +25,11 @@ import OngoingRequests from "@/pages/OngoingRequests";
 import OngoingWork from "@/pages/OngoingWork";
 import Earnings from "@/pages/Earnings";
 import ProviderPortfolio from "@/pages/ProviderPortfolio";
+import AdminDashboard from "./pages/AdminDashboard";
+import ServiceRequestsPage from "./pages/admin/ServiceRequestsPage";
+import UsersPage from "./pages/admin/UsersPage";
+import ProviderVerificationPage from "./pages/admin/ProviderVerificationPage";
+import RequestCalendarPage from "./pages/admin/RequestCalendarPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,81 +50,149 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Admin routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <AdminDashboard />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/requests" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <ServiceRequestsPage />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <UsersPage />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/verification" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <ProviderVerificationPage />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/calendar" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <RequestCalendarPage />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+
+            {/* Protected routes with suspension check */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Dashboard />
+                <RouteGuard>
+                  <Dashboard />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute>
-                <Profile />
+                <RouteGuard>
+                  <Profile />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/provider/profile" element={
               <ProtectedRoute requiredRole="PROVIDER">
-                <ProviderProfile />
+                <RouteGuard>
+                  <ProviderProfile />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/providers" element={
               <ProtectedRoute>
-                <ProvidersList />
+                <RouteGuard>
+                  <ProvidersList />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/providers/:providerId" element={
               <ProtectedRoute>
-                <ProviderDetails />
+                <RouteGuard>
+                  <ProviderDetails />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/requests" element={
               <ProtectedRoute>
-                <MyRequests />
+                <RouteGuard>
+                  <MyRequests />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/requests/:requestId/pitches" element={
               <ProtectedRoute>
-                <RequestPitches />
+                <RouteGuard>
+                  <RequestPitches />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/all-requests" element={
               <ProtectedRoute>
-                <AllRequests />
+                <RouteGuard>
+                  <AllRequests />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/create-request" element={
               <ProtectedRoute requiredRole="CLIENT">
-                <CreateRequest />
+                <RouteGuard>
+                  <CreateRequest />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/all-pitches" element={
               <ProtectedRoute requiredRole="PROVIDER">
-                <AllPitches />
+                <RouteGuard>
+                  <AllPitches />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/ongoing-requests" element={
               <ProtectedRoute requiredRole="CLIENT">
-                <OngoingRequests />
+                <RouteGuard>
+                  <OngoingRequests />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/ongoing-work" element={
               <ProtectedRoute requiredRole="PROVIDER">
-                <OngoingWork />
+                <RouteGuard>
+                  <OngoingWork />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/earnings" element={
               <ProtectedRoute requiredRole="PROVIDER">
-                <Earnings />
+                <RouteGuard>
+                  <Earnings />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/provider/portfolio" element={
               <ProtectedRoute requiredRole="PROVIDER">
-                <ProviderPortfolio />
+                <RouteGuard>
+                  <ProviderPortfolio />
+                </RouteGuard>
               </ProtectedRoute>
             } />
             
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

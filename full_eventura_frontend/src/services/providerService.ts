@@ -205,7 +205,46 @@ export const providerService = {
       }
       throw new Error("Failed to get provider");
     }
-  }
+  },
+
+  async updateProviderVerification(providerId: number, isVerified: boolean): Promise<ProviderProfileResponse> {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/admin/providers/${providerId}/verification`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(isVerified),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error("Not authenticated");
+        }
+        if (response.status === 403) {
+          throw new Error("Not authorized to verify providers");
+        }
+        if (response.status === 404) {
+          throw new Error("Provider not found");
+        }
+        throw new Error(errorData.message || "Failed to update provider verification");
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to update provider verification");
+    }
+  },
 };
 
 function getDriveImageUrl(url: string) {
