@@ -22,6 +22,8 @@ import AllPitches from "@/pages/AllPitches";
 import RequestPitches from "@/pages/RequestPitches";
 import OngoingRequests from "@/pages/OngoingRequests";
 import OngoingWork from "@/pages/OngoingWork";
+import Earnings from "@/pages/Earnings";
+import ProviderPortfolio from "@/pages/ProviderPortfolio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -103,6 +105,16 @@ const App = () => (
             <Route path="/ongoing-work" element={
               <ProtectedRoute requiredRole="PROVIDER">
                 <OngoingWork />
+              </ProtectedRoute>
+            } />
+            <Route path="/earnings" element={
+              <ProtectedRoute requiredRole="PROVIDER">
+                <Earnings />
+              </ProtectedRoute>
+            } />
+            <Route path="/provider/portfolio" element={
+              <ProtectedRoute requiredRole="PROVIDER">
+                <ProviderPortfolio />
               </ProtectedRoute>
             } />
             
