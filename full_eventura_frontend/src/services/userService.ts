@@ -1,16 +1,9 @@
 import { getAuthToken } from "@/utils/auth";
+import { UserResponse } from "@/types/user";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-export interface UserResponse {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  mobileNumber: string;
-  role: string;
-  accountStatus: string;
-}
+export type { UserResponse };
 
 export const userService = {
   async getUserById(userId: number): Promise<UserResponse> {
