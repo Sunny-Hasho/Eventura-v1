@@ -34,6 +34,8 @@ export interface PageableUserResponse {
   empty: boolean;
 }
 
+export type UserStatus = "ACTIVE" | "SUSPENDED" | "DELETED";
+
 export const userService = {
   async getUserById(userId: number): Promise<UserResponse> {
     const token = getAuthToken();
@@ -101,6 +103,42 @@ export const userService = {
         throw error;
       }
       throw new Error("Failed to fetch users");
+    }
+  },
+
+  async updateUserStatus(userId: number, status: UserStatus): Promise<UserResponse> {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userId}/status`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(status),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Not authenticated");
+        }
+        if (response.status === 404) {
+          throw new Error("User not found");
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update user status");
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to update user status");
     }
   },
 }; 
