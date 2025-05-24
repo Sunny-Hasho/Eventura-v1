@@ -8,6 +8,7 @@ export interface Page<T> {
   totalElements: number;
 }
 
+
 export interface PaymentResponse {
   id: number;
   requestId: number;
@@ -18,3 +19,4 @@ export interface PaymentResponse {
   transactionId: string;
   createdAt: string;
 } 
+

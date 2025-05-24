@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
 import { authService } from "@/services/authService";
 import { AuthContextType, AuthState, LoginRequest, RegisterRequest, UpdateUserRequest } from "@/types/auth";
 import { useToast } from "@/components/ui/use-toast";
+import SuspensionPopup from "@/components/SuspensionPopup";
 
 // Initial state
 const initialState: AuthState = {
@@ -93,6 +94,14 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const { toast } = useToast();
+  const [showSuspensionPopup, setShowSuspensionPopup] = useState(false);
+
+  // Check user status and show suspension popup if needed
+  useEffect(() => {
+    if (state.user?.accountStatus === "SUSPENDED") {
+      setShowSuspensionPopup(true);
+    }
+  }, [state.user]);
 
   // Load user from token
   useEffect(() => {
@@ -107,6 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const user = await authService.getUserInfo(token);
         dispatch({ type: "USER_LOADED", payload: { user } });
+        
+        // Check if user is suspended
+        if (user.accountStatus === "SUSPENDED") {
+          setShowSuspensionPopup(true);
+        }
       } catch (error) {
         dispatch({ type: "AUTH_ERROR" });
       }
@@ -138,10 +152,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const user = await authService.getUserInfo(token);
       dispatch({ type: "USER_LOADED", payload: { user } });
 
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${user.firstName}!`,
-      });
+      // Check if user is suspended
+      if (user.accountStatus === "SUSPENDED") {
+        setShowSuspensionPopup(true);
+        toast({
+          title: "Account Suspended",
+          description: "Your account has been suspended. Please contact admin for assistance.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${user.firstName}!`,
+        });
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       dispatch({
@@ -285,6 +309,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
+      <SuspensionPopup 
+        isOpen={showSuspensionPopup} 
+        onClose={() => setShowSuspensionPopup(false)} 
+      />
     </AuthContext.Provider>
   );
 };

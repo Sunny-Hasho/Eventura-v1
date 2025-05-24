@@ -282,6 +282,30 @@ class ServiceRequestService {
     }
     return await response.json();
   }
+
+  async deleteRequestAsAdmin(requestId: number): Promise<void> {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    const response = await fetch(`${API_URL}/api/admin/requests/${requestId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Not authenticated");
+      }
+      if (response.status === 404) {
+        throw new Error("Request not found");
+      }
+      throw new Error("Failed to delete request");
+    }
+  }
 }
 
 export const serviceRequestService = new ServiceRequestService(); 

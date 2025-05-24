@@ -3,16 +3,6 @@ import { Page, PaymentResponse } from "@/types/common";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-interface PaymentResponse {
-  id: number;
-  requestId: number;
-  clientId: number;
-  providerId: number;
-  amount: number;
-  paymentStatus: "PENDING" | "COMPLETED" | "FAILED";
-  transactionId: string;
-  createdAt: string;
-}
 
 class PaymentService {
   async createPayment(data: { requestId: number; amount: number; paymentMethod: string }) {
