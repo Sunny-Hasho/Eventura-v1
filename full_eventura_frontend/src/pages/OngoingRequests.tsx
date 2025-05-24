@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Mail, Phone, MapPin } from "lucide-react";
+import { User, Mail, Phone, MapPin, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { paymentService } from "@/services/paymentService";
 
@@ -157,6 +157,21 @@ const OngoingRequests = () => {
     }
   };
 
+  const getStatusSummary = () => {
+    if (!requestsData?.content) return { assigned: 0, completed: 0, pending: 0 };
+    
+    return {
+      assigned: requestsData.content.filter(r => r.status === "ASSIGNED").length,
+      completed: requestsData.content.filter(r => r.status === "COMPLETED").length,
+      pending: requestsData.content.filter(r => 
+        r.status === "COMPLETED" && 
+        (!paymentStatuses[r.id] || paymentStatuses[r.id] !== "COMPLETED")
+      ).length
+    };
+  };
+
+  const statusSummary = getStatusSummary();
+
   if (!authState.isAuthenticated || authState.user?.role !== "CLIENT") {
     return null;
   }
@@ -170,20 +185,45 @@ const OngoingRequests = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Ongoing Requests</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            View and manage your assigned service requests
-          </p>
+        <header className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Ongoing Requests</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              View and manage your assigned service requests
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{statusSummary.assigned}</p>
+                <p className="text-xs text-gray-500">Assigned</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{statusSummary.completed}</p>
+                <p className="text-xs text-gray-500">Completed</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{statusSummary.pending}</p>
+                <p className="text-xs text-gray-500">Pending Payment</p>
+              </div>
+            </div>
+          </div>
         </header>
 
         <Tabs value={tab} onValueChange={handleTabChange}>
-          <TabsList>
+          <TabsList className="mb-6">
             <TabsTrigger value="assigned">Assigned</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
           <TabsContent value="assigned">
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
               {isLoading ? (
                 <div className="p-8 text-center">Loading requests...</div>
               ) : assignedRequests.length === 0 ? (
@@ -192,61 +232,65 @@ const OngoingRequests = () => {
                 </div>
               ) : (
                 <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Service Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assignedRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">{request.title}</TableCell>
-                          <TableCell>{request.eventName}</TableCell>
-                          <TableCell>
-                            {format(new Date(request.eventDate), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell>{request.serviceType}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                              {request.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {request.assignedProviderId ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">Title</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Event</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Date</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Service Type</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Provider</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {assignedRequests.map((request) => (
+                          <TableRow key={request.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
+                            <TableCell className="text-gray-600">{request.eventName}</TableCell>
+                            <TableCell className="text-gray-600">
+                              {format(new Date(request.eventDate), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="text-gray-600">{request.serviceType}</TableCell>
+                            <TableCell>
+                              {request.assignedProviderId ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewProviderDetails(request)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  View Provider
+                                </Button>
+                              ) : (
+                                <span className="text-gray-500">Not Assigned</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewProviderDetails(request)}
+                                onClick={() => setSelectedRequest(request)}
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                               >
-                                View Provider
+                                View Details
                               </Button>
-                            ) : (
-                              "Not Assigned"
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              onClick={() => setSelectedRequest(request)}
-                            >
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
+                                {request.status}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
 
                   {totalElements > 20 && (
-                    <div className="flex items-center justify-between p-4 border-t">
-                      <div className="text-sm text-gray-500">
+                    <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                      <div className="text-sm text-gray-600">
                         Showing {currentPage * 20 + 1} to{" "}
                         {Math.min((currentPage + 1) * 20, totalElements)} of{" "}
                         {totalElements} requests
@@ -257,6 +301,7 @@ const OngoingRequests = () => {
                           size="sm"
                           onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 0}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                           Previous
                         </Button>
@@ -265,6 +310,7 @@ const OngoingRequests = () => {
                           size="sm"
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage >= totalPages - 1}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                           Next
                         </Button>
@@ -276,7 +322,7 @@ const OngoingRequests = () => {
             </div>
           </TabsContent>
           <TabsContent value="completed">
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
               {isLoading ? (
                 <div className="p-8 text-center">Loading requests...</div>
               ) : completedRequests.length === 0 ? (
@@ -285,78 +331,80 @@ const OngoingRequests = () => {
                 </div>
               ) : (
                 <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Service Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {completedRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">{request.title}</TableCell>
-                          <TableCell>{request.eventName}</TableCell>
-                          <TableCell>
-                            {format(new Date(request.eventDate), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell>{request.serviceType}</TableCell>
-                          <TableCell>
-                            {paymentStatuses[request.id] === "COMPLETED" ? (
-                              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                Paid
-                              </span>
-                            ) : paymentStatuses[request.id] === "PENDING" ? (
-                              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                                Payment Pending
-                              </span>
-                            ) : (
-                              <div className="flex justify-end">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">Title</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Event</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Date</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Service Type</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Provider</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {completedRequests.map((request) => (
+                          <TableRow key={request.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
+                            <TableCell className="text-gray-600">{request.eventName}</TableCell>
+                            <TableCell className="text-gray-600">
+                              {format(new Date(request.eventDate), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="text-gray-600">{request.serviceType}</TableCell>
+                            <TableCell>
+                              {request.assignedProviderId ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewProviderDetails(request)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  View Provider
+                                </Button>
+                              ) : (
+                                <span className="text-gray-500">Not Assigned</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                onClick={() => setSelectedRequest(request)}
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                              >
+                                View Details
+                              </Button>
+                            </TableCell>
+                            <TableCell>
+                              {paymentStatuses[request.id] === "COMPLETED" ? (
+                                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Paid
+                                </span>
+                              ) : paymentStatuses[request.id] === "PENDING" ? (
+                                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  Payment Pending
+                                </span>
+                              ) : (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handlePay(request)}
-                                  className="text-xs"
+                                  className="text-xs border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                                 >
                                   Pay Now
                                 </Button>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {request.assignedProviderId ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewProviderDetails(request)}
-                              >
-                                View Provider
-                              </Button>
-                            ) : (
-                              "Not Assigned"
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              onClick={() => setSelectedRequest(request)}
-                            >
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
 
                   {totalElements > 20 && (
-                    <div className="flex items-center justify-between p-4 border-t">
-                      <div className="text-sm text-gray-500">
+                    <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                      <div className="text-sm text-gray-600">
                         Showing {currentPage * 20 + 1} to{" "}
                         {Math.min((currentPage + 1) * 20, totalElements)} of{" "}
                         {totalElements} requests
@@ -367,6 +415,7 @@ const OngoingRequests = () => {
                           size="sm"
                           onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 0}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                           Previous
                         </Button>
@@ -375,6 +424,7 @@ const OngoingRequests = () => {
                           size="sm"
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage >= totalPages - 1}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                           Next
                         </Button>
