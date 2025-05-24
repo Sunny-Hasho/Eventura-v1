@@ -102,6 +102,17 @@ public class ProviderController {
         return ResponseEntity.ok(providerService.getPortfolios(providerId, pageable));
     }
 
+    //Delete Portfolio By Portfolio ID
+    @DeleteMapping("/{providerId}/portfolios/{portfolioId}")
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<Void> deletePortfolio(@PathVariable Long providerId,
+                                                @PathVariable Long portfolioId,
+                                                @RequestHeader("Authorization") String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        providerService.deletePortfolio(providerId, portfolioId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
     private Long getUserIdFromToken(String authHeader) {
         String token = authHeader.replace("Bearer ", "");
         return jwtTokenProvider.getUserIdFromJWT(token);
