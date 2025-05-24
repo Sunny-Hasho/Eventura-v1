@@ -29,6 +29,14 @@ import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus } from "lucide-react";
 import { providerService } from "@/services/providerService";
+import {
+  Dialog as ConfirmDialog,
+  DialogContent as ConfirmDialogContent,
+  DialogHeader as ConfirmDialogHeader,
+  DialogTitle as ConfirmDialogTitle,
+  DialogDescription as ConfirmDialogDescription,
+  DialogFooter as ConfirmDialogFooter,
+} from "@/components/ui/dialog";
 
 const PAGE_SIZE = 10;
 
@@ -51,6 +59,8 @@ const ProviderPortfolio = () => {
   const [providerIdLoading, setProviderIdLoading] = useState(true);
   const [providerIdError, setProviderIdError] = useState<string | null>(null);
   const [profileExists, setProfileExists] = useState<boolean | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   // Fetch providerId on mount
   useEffect(() => {
@@ -185,9 +195,21 @@ const ProviderPortfolio = () => {
   };
 
   const handleDelete = (portfolioId: number) => {
-    if (window.confirm("Are you sure you want to delete this portfolio item?")) {
-      deleteMutation.mutate({ portfolioId });
+    setConfirmDeleteId(portfolioId);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmDeleteId !== null) {
+      deleteMutation.mutate({ portfolioId: confirmDeleteId });
     }
+    setIsConfirmOpen(false);
+    setConfirmDeleteId(null);
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setConfirmDeleteId(null);
   };
 
   return (
@@ -372,6 +394,22 @@ const ProviderPortfolio = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Confirm Delete Dialog */}
+        <ConfirmDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <ConfirmDialogContent>
+            <ConfirmDialogHeader>
+              <ConfirmDialogTitle>Confirm Deletion</ConfirmDialogTitle>
+              <ConfirmDialogDescription>
+                Are you sure you want to delete this portfolio item? This action cannot be undone.
+              </ConfirmDialogDescription>
+            </ConfirmDialogHeader>
+            <ConfirmDialogFooter>
+              <Button variant="outline" onClick={handleCancelDelete}>Cancel</Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>Delete</Button>
+            </ConfirmDialogFooter>
+          </ConfirmDialogContent>
+        </ConfirmDialog>
       </div>
     </div>
   );

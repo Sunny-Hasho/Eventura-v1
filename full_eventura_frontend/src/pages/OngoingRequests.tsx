@@ -25,9 +25,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Mail, Phone, MapPin, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, MapPin, CheckCircle2, Clock, AlertCircle, CheckCircle, CreditCard } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { paymentService } from "@/services/paymentService";
+import { reviewService } from "@/services/reviewService";
 
 const OngoingRequests = () => {
   const { authState } = useAuth();
@@ -44,6 +45,14 @@ const OngoingRequests = () => {
   const [tab, setTab] = useState(tabParam === "completed" ? "completed" : "assigned");
   const queryClient = useQueryClient();
   const [processingPayment, setProcessingPayment] = useState<number | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewRequestId, setReviewRequestId] = useState<number | null>(null);
+  const [reviewProviderId, setReviewProviderId] = useState<number | null>(null);
 
   useEffect(() => {
     if (tabParam !== tab) {
@@ -150,10 +159,38 @@ const OngoingRequests = () => {
       setIsPaymentOpen(false);
       // Invalidate and refetch payment statuses
       await queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
+      // Open review modal after payment
+      setReviewRequestId(paymentRequest.id);
+      setReviewProviderId(paymentRequest.assignedProviderId);
+      setIsReviewOpen(true);
+      setReviewRating(0);
+      setReviewComment("");
+      setReviewError(null);
+      setReviewSuccess(false);
     } catch (error) {
       toast({ title: "Payment failed", variant: "destructive" });
     } finally {
       setProcessingPayment(null);
+    }
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewRequestId || !reviewProviderId) return;
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      await reviewService.createReview({
+        requestId: reviewRequestId,
+        rating: reviewRating,
+        comment: reviewComment,
+      });
+      setReviewSuccess(true);
+      setTimeout(() => setIsReviewOpen(false), 1500);
+    } catch (err) {
+      setReviewError(err instanceof Error ? err.message : "Failed to submit review");
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -636,24 +673,106 @@ const OngoingRequests = () => {
               Pay for <b>{paymentRequest?.title}</b>
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handlePaymentSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Amount</label>
-              <input
-                type="number"
-                value={paymentRequest?.budget || ""}
-                readOnly
-                className="w-full border rounded px-2 py-1"
-              />
+          <div className="flex flex-col items-center gap-4 py-2">
+            <div className="flex gap-2 mb-2">
+              <CreditCard className="w-8 h-8 text-blue-500" />
+              {/* Add more icons here if desired, e.g. Visa/Mastercard SVGs */}
             </div>
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={processingPayment === paymentRequest?.id}
-            >
-              {processingPayment === paymentRequest?.id ? "Processing..." : "Pay Now"}
-            </Button>
-          </form>
+            <div className="w-full border-b border-gray-200 mb-4" />
+            <form onSubmit={handlePaymentSubmit} className="w-full flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Amount</label>
+                <input
+                  type="number"
+                  value={paymentRequest?.budget || ""}
+                  readOnly
+                  className="w-full border rounded px-2 py-2 bg-gray-50 text-lg font-semibold text-center focus:outline-none"
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full mt-2"
+                disabled={processingPayment === paymentRequest?.id}
+              >
+                {processingPayment === paymentRequest?.id ? "Processing..." : "Pay Now"}
+              </Button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Modal */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Leave a Review</DialogTitle>
+            <DialogDescription>
+              Rate and review your experience with this provider
+            </DialogDescription>
+          </DialogHeader>
+          <button
+            type="button"
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl"
+            onClick={() => setIsReviewOpen(false)}
+            aria-label="Close"
+          >
+            ×
+          </button>
+          {reviewSuccess ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <CheckCircle className="w-16 h-16 text-green-500 mb-4 animate-fade-in" />
+              <div className="text-green-600 font-semibold text-lg mb-2">Thank you for your review!</div>
+            </div>
+          ) : (
+            <form onSubmit={handleReviewSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Rating</label>
+                <div className="flex gap-2 justify-center text-3xl">
+                  {[1,2,3,4,5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      className={
+                        star <= reviewRating
+                          ? "text-yellow-400 scale-110 transition-transform hover:scale-125"
+                          : "text-gray-300 hover:text-yellow-300 hover:scale-110 transition-all"
+                      }
+                      aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Comment</label>
+                <textarea
+                  className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  rows={4}
+                  maxLength={300}
+                  value={reviewComment}
+                  onChange={e => setReviewComment(e.target.value)}
+                  required
+                  placeholder="Share your experience..."
+                />
+                <div className="text-xs text-gray-400 text-right mt-1">{reviewComment.length}/300</div>
+              </div>
+              {reviewError && <div className="text-red-500 text-sm text-center">{reviewError}</div>}
+              <Button type="submit" className="w-full mt-2" disabled={reviewSubmitting || reviewRating === 0}>
+                {reviewSubmitting ? "Submitting..." : "Submit Review"}
+              </Button>
+            </form>
+          )}
+          <style>{`
+            .animate-fade-in {
+              animation: fadeIn 0.5s ease;
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; transform: scale(0.95); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
         </DialogContent>
       </Dialog>
     </div>
