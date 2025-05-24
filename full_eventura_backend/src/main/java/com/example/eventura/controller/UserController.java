@@ -59,7 +59,6 @@ public class UserController {
 
     //Get Own User Profile
     @GetMapping("/me")
-    @PreAuthorize("hasRole('CLIENT') or hasRole('PROVIDER')")
     public ResponseEntity<UserResponse> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
         Long userId = getUserIdFromToken(authHeader);
         return ResponseEntity.ok(userService.getUserById(userId, userId));
