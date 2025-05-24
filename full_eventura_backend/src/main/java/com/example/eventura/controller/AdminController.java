@@ -2,6 +2,7 @@ package com.example.eventura.controller;
 
 import com.example.eventura.dto.response.NotificationResponse;
 import com.example.eventura.dto.response.PortfolioResponse;
+import com.example.eventura.dto.response.ProviderResponse;
 import com.example.eventura.dto.response.ServiceRequestResponse;
 import com.example.eventura.dto.response.UserResponse;
 import com.example.eventura.dto.response.VerificationDocumentResponse;
@@ -35,13 +36,11 @@ public class AdminController {
         return ResponseEntity.ok(userService.updateAccountStatus(userId, status));
     }
 
-    //get all users
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
-
 
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -103,6 +102,13 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<NotificationResponse>> getAllNotifications(Pageable pageable) {
         return ResponseEntity.ok(notificationService.getNotifications(0L, pageable));
+    }
+
+    @PutMapping("/providers/{providerId}/verification")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProviderResponse> updateProviderVerificationStatus(
+            @PathVariable Long providerId, @RequestBody Boolean isVerified) {
+        return ResponseEntity.ok(providerService.updateProviderVerificationStatus(providerId, isVerified));
     }
 
     private Long getUserIdFromToken(String authHeader) {

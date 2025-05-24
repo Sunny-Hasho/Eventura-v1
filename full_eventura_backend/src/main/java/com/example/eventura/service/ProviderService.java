@@ -170,6 +170,21 @@ public class ProviderService {
         return convertToDocumentResponse(updatedDocument);
     }
 
+    public ProviderResponse updateProviderVerificationStatus(Long providerId, Boolean isVerified) {
+        ServiceProvider provider = serviceProviderRepository.findById(providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
+
+        provider.setIsVerified(isVerified);
+        ServiceProvider updatedProvider = serviceProviderRepository.save(provider);
+
+        // Send notification
+        String notificationMessage = String.format("Your provider verification status has been %s",
+                isVerified ? "verified" : "unverified");
+        notificationService.createNotification(provider.getUser(), notificationMessage);
+
+        return convertToResponse(updatedProvider);
+    }
+
     public PortfolioResponse createPortfolio(Long providerId, PortfolioRequest request) {
         ServiceProvider provider = serviceProviderRepository.findById(providerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
