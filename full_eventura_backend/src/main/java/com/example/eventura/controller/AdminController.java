@@ -35,6 +35,14 @@ public class AdminController {
         return ResponseEntity.ok(userService.updateAccountStatus(userId, status));
     }
 
+    //get all users
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        return ResponseEntity.ok(userService.getAllUsers(pageable));
+    }
+
+
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUserAccount(@PathVariable Long userId) {

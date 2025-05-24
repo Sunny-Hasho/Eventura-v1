@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/users/register", "/api/users/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").authenticated() // Explicitly require authentication for all /api/users endpoints
                         .requestMatchers("/api/providers").permitAll() // Allow public access to list providers
                         .requestMatchers("/api/providers/{providerId}").hasAnyRole("CLIENT", "PROVIDER", "ADMIN") // Allow CLIENT, PROVIDER, ADMIN to get provider profile by ID
                         .requestMatchers("/api/providers/**").hasAnyRole("PROVIDER", "ADMIN","CLIENT") // Restrict other provider endpoints to PROVIDER, ADMIN

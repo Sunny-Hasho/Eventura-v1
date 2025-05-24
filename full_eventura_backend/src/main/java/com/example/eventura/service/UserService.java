@@ -11,6 +11,8 @@ import com.example.eventura.exception.UnauthorizedException;
 import com.example.eventura.repository.UserRepository;
 import com.example.eventura.security.JwtTokenProvider;
 import jakarta.mail.MessagingException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,6 +184,14 @@ public class UserService {
 
         return convertToResponse(updatedUser);
     }
+
+
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(this::convertToResponse);
+    }
+
+
 
     private UserResponse convertToResponse(User user) {
         UserResponse response = new UserResponse();
