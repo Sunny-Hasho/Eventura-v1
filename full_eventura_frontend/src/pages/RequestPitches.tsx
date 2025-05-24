@@ -4,8 +4,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { pitchService } from "@/services/pitchService";
 import { serviceRequestService } from "@/services/serviceRequestService";
+import { userService } from "@/services/userService";
 import { PitchResponse } from "@/types/pitch";
 import { ServiceRequestResponse } from "@/types/serviceRequest";
+import { UserResponse } from "@/types/user";
 import { format } from "date-fns";
 import { ArrowLeft, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -40,6 +42,7 @@ const RequestPitches = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [providerDetails, setProviderDetails] = useState<Record<number, UserResponse>>({});
   const pageSize = 10;
 
   useEffect(() => {
@@ -60,6 +63,21 @@ const RequestPitches = () => {
         setTotalPages(pitchesResponse.totalPages);
         setTotalElements(pitchesResponse.totalElements);
         setRequest(requestResponse);
+
+        // Fetch provider details for all unique providerIds
+        const uniqueProviderIds = Array.from(new Set(pitchesResponse.content.map(p => p.providerId)));
+        const details: Record<number, UserResponse> = { ...providerDetails };
+        await Promise.all(uniqueProviderIds.map(async (id) => {
+          if (!details[id]) {
+            try {
+              details[id] = await userService.getUserById(id);
+            } catch (e) {
+              // fallback if user not found
+              details[id] = { id, firstName: "Unknown", lastName: "", email: "", mobileNumber: "", role: "PROVIDER", accountStatus: "", address: "", bio: "", createdAt: "" };
+            }
+          }
+        }));
+        setProviderDetails(details);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -73,7 +91,8 @@ const RequestPitches = () => {
     };
 
     fetchData();
-  }, [requestId, currentPage, authState.isAuthenticated, navigate, toast]);
+    // eslint-disable-next-line
+  }, [requestId, currentPage, authState.isAuthenticated, navigate]);
 
   const handleViewPitchDetails = (pitch: PitchResponse) => {
     setSelectedPitch(pitch);
@@ -85,24 +104,19 @@ const RequestPitches = () => {
 
     try {
       setIsAssigning(true);
-      
-      // Update the request assignment and the winning pitch status
+      const selectedPitch = pitches.find(p => p.id === pitchId);
+      if (!selectedPitch) throw new Error("Pitch not found");
+      // Assign provider and update pitch statuses
       const [updatedRequest, updatedPitch] = await Promise.all([
         serviceRequestService.assignProvider(Number(requestId), providerId),
         pitchService.updatePitchStatus(pitchId, "WIN")
       ]);
-      
       // Update all other pitches to LOSE status
       const otherPitches = pitches.filter(p => p.id !== pitchId);
-      const updateOtherPitches = otherPitches.map(pitch => 
-        pitchService.updatePitchStatus(pitch.id, "LOSE")
-      );
-      
-      // Wait for all status updates to complete
-      await Promise.all(updateOtherPitches);
-      
-      setRequest(updatedRequest);
-      
+      await Promise.all(otherPitches.map(pitch => pitchService.updatePitchStatus(pitch.id, "LOSE")));
+      // Update the request budget to the assigned pitch's proposedPrice
+      const updatedRequestWithBudget = await serviceRequestService.updateRequestBudget(Number(requestId), selectedPitch.proposedPrice);
+      setRequest(updatedRequestWithBudget);
       // Update the pitches list to reflect all status changes
       setPitches(pitches.map(pitch => {
         if (pitch.id === pitchId) {
@@ -110,16 +124,14 @@ const RequestPitches = () => {
         }
         return { ...pitch, status: "LOSE" };
       }));
-
       toast({
         title: "Success",
-        description: "Provider has been assigned and all pitch statuses have been updated",
+        description: "Provider assigned, pitch statuses updated, and budget set.",
       });
     } catch (error) {
-      console.error("Error assigning provider:", error);
       toast({
         title: "Error",
-        description: "Failed to assign provider or update pitch statuses",
+        description: "Failed to assign provider, update pitch statuses, or update budget.",
         variant: "destructive",
       });
     } finally {
@@ -174,7 +186,7 @@ const RequestPitches = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Provider ID</TableHead>
+                      <TableHead>Provider</TableHead>
                       <TableHead>Proposed Price</TableHead>
                       <TableHead>Submitted On</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -186,7 +198,14 @@ const RequestPitches = () => {
                         key={pitch.id}
                         className={pitch.providerId === request?.assignedProviderId ? "bg-green-50" : ""}
                       >
-                        <TableCell>{pitch.providerId}</TableCell>
+                        <TableCell>
+                          {providerDetails[pitch.providerId]
+                            ? `${providerDetails[pitch.providerId].firstName} ${providerDetails[pitch.providerId].lastName}`
+                            : `Provider #${pitch.providerId}`}
+                          <div className="text-xs text-gray-500">
+                            {providerDetails[pitch.providerId]?.email}
+                          </div>
+                        </TableCell>
                         <TableCell>${pitch.proposedPrice.toLocaleString()}</TableCell>
                         <TableCell>
                           {format(new Date(pitch.createdAt), "MMM d, yyyy 'at' h:mm a")}
@@ -265,8 +284,18 @@ const RequestPitches = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Provider ID</p>
-                  <p className="mt-1">{selectedPitch.providerId}</p>
+                  <p className="text-sm font-medium text-gray-500">Provider</p>
+                  <p className="mt-1">
+                    {providerDetails[selectedPitch.providerId]
+                      ? `${providerDetails[selectedPitch.providerId].firstName} ${providerDetails[selectedPitch.providerId].lastName}`
+                      : `Provider #${selectedPitch.providerId}`}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {providerDetails[selectedPitch.providerId]?.email}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {providerDetails[selectedPitch.providerId]?.mobileNumber ? `Mobile: ${providerDetails[selectedPitch.providerId]?.mobileNumber}` : ""}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Proposed Price</p>

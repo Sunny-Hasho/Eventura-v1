@@ -19,44 +19,31 @@ import { notificationService } from "@/services/notificationService";
 import { NotificationResponse } from "@/types/notification";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const NotificationDropdown = () => {
   const { authState } = useAuth();
   const { isAuthenticated } = authState;
-  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<NotificationResponse | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchNotifications = async () => {
-    if (!isAuthenticated) return;
-    
-    try {
-      setIsLoading(true);
-      const response = await notificationService.getNotifications(0, 10);
-      setNotifications(response.content);
-      setUnreadCount(response.content.filter(n => !n.isRead).length);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Fetch all notifications with React Query
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationService.getAllNotifications(),
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications();
-      // Poll for new notifications every minute
-      const interval = setInterval(fetchNotifications, 60000);
-      return () => clearInterval(interval);
-    } else {
-      // Clear notifications when logged out
-      setNotifications([]);
-      setUnreadCount(0);
-    }
-  }, [isAuthenticated]);
+  // Fetch unread count separately
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: () => notificationService.getUnreadCount(),
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+  });
 
   const handleNotificationClick = async (notification: NotificationResponse) => {
     setSelectedNotification(notification);
@@ -65,10 +52,12 @@ const NotificationDropdown = () => {
     if (!notification.isRead) {
       try {
         await notificationService.markAsRead(notification.id);
-        setNotifications(notifications.map(n => 
-          n.id === notification.id ? { ...n, isRead: true } : n
-        ));
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        // Optimistically update the UI
+        queryClient.setQueryData(['notifications'], (old: NotificationResponse[] = []) =>
+          old.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
+        );
+        // Invalidate unread count
+        queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
       } catch (error) {
         toast({
           title: "Error",
@@ -82,8 +71,16 @@ const NotificationDropdown = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      // Optimistically update the UI
+      queryClient.setQueryData(['notifications'], (old: NotificationResponse[] = []) =>
+        old.map(n => ({ ...n, isRead: true }))
+      );
+      // Invalidate unread count
+      queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -118,13 +115,13 @@ const NotificationDropdown = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleMarkAllAsRead}
-                className="text-xs"
+                className="text-xs hover:bg-gray-100"
               >
                 Mark all as read
               </Button>
             )}
           </div>
-          <ScrollArea className="h-[300px]">
+          <ScrollArea className="h-[400px]">
             {isLoading ? (
               <div className="p-4 text-center text-sm text-gray-500">
                 Loading notifications...
@@ -139,13 +136,13 @@ const NotificationDropdown = () => {
                   key={notification.id}
                   className={`p-4 cursor-pointer ${
                     !notification.isRead 
-                      ? 'bg-purple-50 hover:bg-purple-100 border-l-4 border-purple-600' 
-                      : ''
+                      ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-600' 
+                      : 'hover:bg-gray-50'
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex flex-col gap-1">
-                    <p className={`text-sm ${!notification.isRead ? 'text-purple-900 font-medium' : ''}`}>
+                    <p className={`text-sm ${!notification.isRead ? 'text-blue-900 font-medium' : 'text-gray-900'}`}>
                       {notification.message}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -162,7 +159,7 @@ const NotificationDropdown = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Notification</DialogTitle>
+            <DialogTitle>Notification Details</DialogTitle>
           </DialogHeader>
           {selectedNotification && (
             <div className="space-y-4">
@@ -170,12 +167,13 @@ const NotificationDropdown = () => {
                 <p className="text-sm text-gray-500">
                   {format(new Date(selectedNotification.createdAt), "MMMM d, yyyy 'at' h:mm a")}
                 </p>
-                <p className="text-base">{selectedNotification.message}</p>
+                <p className="text-base text-gray-900">{selectedNotification.message}</p>
               </div>
               <div className="flex justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
+                  className="hover:bg-gray-50"
                 >
                   Close
                 </Button>
