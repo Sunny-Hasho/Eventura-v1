@@ -63,7 +63,7 @@ const OngoingRequests = () => {
     queryFn: () => serviceRequestService.getMyRequests(0, 100),
     enabled: authState.isAuthenticated && authState.user?.role === "CLIENT",
   });
-
+      
   // Fetch payment statuses with React Query
   const { data: paymentStatuses = {} } = useQuery({
     queryKey: ['paymentStatuses', requestsData?.content],
@@ -181,16 +181,52 @@ const OngoingRequests = () => {
   const totalElements = requestsData?.totalElements || 0;
   const totalPages = requestsData?.totalPages || 0;
 
+  const paymentCompleteRequests = requestsData?.content.filter(
+    r =>
+      r.status === "ASSIGNED" &&
+      paymentStatuses[r.id] === "COMPLETED"
+  ) || [];
+
+  const paymentPendingRequests = requestsData?.content.filter(
+    r => paymentStatuses[r.id] === "PENDING"
+  ) || [];
+
+  const handleMarkAsComplete = async (request) => {
+    try {
+      await serviceRequestService.updateRequestStatus(request.id, "COMPLETED");
+      toast({ title: "Request marked as completed!" });
+      // Refetch requests and payment statuses
+      queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
+    } catch (error) {
+      toast({ title: "Failed to mark as complete", variant: "destructive" });
+    }
+  };
+
+  const handlePaymentComplete = async (request) => {
+    try {
+      // Get payment info for this request
+      const payment = await paymentService.getPaymentStatusByRequestId(request.id);
+      await paymentService.updatePaymentStatus(payment.id, "COMPLETED");
+      toast({ title: "Payment marked as completed!" });
+      // Refetch requests and payment statuses
+      queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
+    } catch (error) {
+      toast({ title: "Failed to mark payment as complete", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <header className="mb-8 flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Ongoing Requests</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              View and manage your assigned service requests
-            </p>
+          <h1 className="text-3xl font-bold text-gray-900">Ongoing Requests</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            View and manage your assigned service requests
+          </p>
           </div>
           <div className="flex gap-4">
             <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
@@ -221,6 +257,7 @@ const OngoingRequests = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="assigned">Assigned</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="payment-pending">Payment Pending</TabsTrigger>
           </TabsList>
           <TabsContent value="assigned">
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -233,8 +270,8 @@ const OngoingRequests = () => {
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
+                  <Table>
+                    <TableHeader>
                         <TableRow className="bg-gray-50 hover:bg-gray-50">
                           <TableHead className="font-semibold text-gray-900">Title</TableHead>
                           <TableHead className="font-semibold text-gray-900">Event</TableHead>
@@ -243,49 +280,49 @@ const OngoingRequests = () => {
                           <TableHead className="font-semibold text-gray-900">Provider</TableHead>
                           <TableHead className="font-semibold text-gray-900">Actions</TableHead>
                           <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {assignedRequests.map((request) => (
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {assignedRequests.map((request) => (
                           <TableRow key={request.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
                             <TableCell className="text-gray-600">{request.eventName}</TableCell>
                             <TableCell className="text-gray-600">
-                              {format(new Date(request.eventDate), "MMM d, yyyy")}
-                            </TableCell>
+                            {format(new Date(request.eventDate), "MMM d, yyyy")}
+                          </TableCell>
                             <TableCell className="text-gray-600">{request.serviceType}</TableCell>
-                            <TableCell>
-                              {request.assignedProviderId ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewProviderDetails(request)}
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                >
-                                  View Provider
-                                </Button>
-                              ) : (
-                                <span className="text-gray-500">Not Assigned</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
+                          <TableCell>
+                            {request.assignedProviderId ? (
                               <Button
                                 variant="ghost"
-                                onClick={() => setSelectedRequest(request)}
-                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                size="sm"
+                                onClick={() => handleViewProviderDetails(request)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               >
-                                View Details
+                                View Provider
                               </Button>
-                            </TableCell>
+                            ) : (
+                                <span className="text-gray-500">Not Assigned</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              onClick={() => setSelectedRequest(request)}
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
                             <TableCell>
                               <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
                                 {request.status}
                               </span>
                             </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                   </div>
 
                   {totalElements > 20 && (
@@ -332,8 +369,8 @@ const OngoingRequests = () => {
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
+                  <Table>
+                    <TableHeader>
                         <TableRow className="bg-gray-50 hover:bg-gray-50">
                           <TableHead className="font-semibold text-gray-900">Title</TableHead>
                           <TableHead className="font-semibold text-gray-900">Event</TableHead>
@@ -342,40 +379,40 @@ const OngoingRequests = () => {
                           <TableHead className="font-semibold text-gray-900">Provider</TableHead>
                           <TableHead className="font-semibold text-gray-900">Actions</TableHead>
                           <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {completedRequests.map((request) => (
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {completedRequests.map((request) => (
                           <TableRow key={request.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
                             <TableCell className="text-gray-600">{request.eventName}</TableCell>
                             <TableCell className="text-gray-600">
-                              {format(new Date(request.eventDate), "MMM d, yyyy")}
-                            </TableCell>
+                            {format(new Date(request.eventDate), "MMM d, yyyy")}
+                          </TableCell>
                             <TableCell className="text-gray-600">{request.serviceType}</TableCell>
-                            <TableCell>
-                              {request.assignedProviderId ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewProviderDetails(request)}
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                >
-                                  View Provider
-                                </Button>
-                              ) : (
-                                <span className="text-gray-500">Not Assigned</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
+                          <TableCell>
+                            {request.assignedProviderId ? (
                               <Button
                                 variant="ghost"
-                                onClick={() => setSelectedRequest(request)}
-                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                size="sm"
+                                onClick={() => handleViewProviderDetails(request)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               >
-                                View Details
+                                View Provider
                               </Button>
-                            </TableCell>
+                            ) : (
+                                <span className="text-gray-500">Not Assigned</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              onClick={() => setSelectedRequest(request)}
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
                             <TableCell>
                               {paymentStatuses[request.id] === "COMPLETED" ? (
                                 <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -396,10 +433,10 @@ const OngoingRequests = () => {
                                 </Button>
                               )}
                             </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                   </div>
 
                   {totalElements > 20 && (
@@ -431,6 +468,69 @@ const OngoingRequests = () => {
                       </div>
                     </div>
                   )}
+                </>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="payment-pending">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              {isLoading ? (
+                <div className="p-8 text-center">Loading requests...</div>
+              ) : paymentPendingRequests.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No payment pending requests found
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">Title</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Event</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Date</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Service Type</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Provider</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paymentPendingRequests.map((request) => (
+                          <TableRow key={request.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
+                            <TableCell className="text-gray-600">{request.eventName}</TableCell>
+                            <TableCell className="text-gray-600">
+                              {format(new Date(request.eventDate), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="text-gray-600">{request.serviceType}</TableCell>
+                            <TableCell>
+                              {request.assignedProviderId ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewProviderDetails(request)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  View Provider
+                                </Button>
+                              ) : (
+                                <span className="text-gray-500">Not Assigned</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePaymentComplete(request)}
+                              >
+                                Payment Complete
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </>
               )}
             </div>
