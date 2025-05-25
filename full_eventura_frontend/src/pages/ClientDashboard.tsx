@@ -2,13 +2,35 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import Navbar from "@/components/Navbar";
-import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { serviceRequestService } from "@/services/serviceRequestService";
 import { ServiceRequestResponse } from "@/types/serviceRequest";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Calendar, 
+  DollarSign, 
+  Briefcase, 
+  Image, 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock, 
+  XCircle, 
+  User, 
+  MessageSquare,
+  Trash2
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +50,8 @@ const ClientDashboard = () => {
   const [requests, setRequests] = useState<ServiceRequestResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [requestToDelete, setRequestToDelete] = useState<ServiceRequestResponse | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ServiceRequestResponse | null>(null);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
   const fetchRequests = async () => {
     try {
@@ -58,7 +82,7 @@ const ClientDashboard = () => {
         title: "Success",
         description: "Request deleted successfully",
       });
-      fetchRequests(); // Refresh the list
+      fetchRequests();
     } catch (error) {
       toast({
         title: "Error",
@@ -70,96 +94,248 @@ const ClientDashboard = () => {
     }
   };
 
-  const handleBrowseProviders = () => {
-    navigate("/providers");
+  const handleViewRequestDetails = async (requestId: number) => {
+    try {
+      setIsDetailsLoading(true);
+      const requestDetails = await serviceRequestService.getRequestById(requestId);
+      setSelectedRequest(requestDetails);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch request details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDetailsLoading(false);
+    }
   };
 
-  const handleCreateRequest = () => {
-    navigate("/create-request");
-  };
-
-  const handleViewMyRequests = () => {
-    navigate("/requests");
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "OPEN":
-        return "bg-green-100 text-green-800";
+        return "default";
       case "ASSIGNED":
-        return "bg-blue-100 text-blue-800";
+        return "secondary";
       case "COMPLETED":
-        return "bg-gray-100 text-gray-800";
+        return "outline";
       case "CANCELLED":
-        return "bg-red-100 text-red-800";
-      case "DRAFT":
-        return "bg-yellow-100 text-yellow-800";
+        return "destructive";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "outline";
     }
   };
 
   const assignedRequests = requests.filter(request => request.status === "ASSIGNED");
   const activeRequests = requests.filter(request => request.status === "OPEN");
+  const ongoingRequests = requests.filter(request => request.status === "ASSIGNED");
+  const completedRequests = requests.filter(request => request.status === "COMPLETED");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+   
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <header className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-          <h1 className="text-3xl font-bold text-gray-900">Client Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your event planning and service providers
+      <div className="container mt-8 bg-white rounded-2xl mx-auto px-4 py-8">
+        <div className="bg-gray-200 rounded-2xl shadow-lg p-6 space-y-8">
+          {/* Header Section */}
+          <div className="flex flex-col  gap-4">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-3xl font-bold tracking-tight">Client Dashboard</h1>
+              <p className="text-muted-foreground">
+                Welcome back, {user?.firstName}! Manage your event planning and service requests.
           </p>
             </div>
-            <div className="flex gap-4">
+            
+            {/* Quick Access Buttons */}
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
-                onClick={() => navigate("/ongoing-requests")}
+                className="gap-2"
+                onClick={() => navigate("/client/profile")}
               >
-                View Ongoing Requests
+                <User className="h-4 w-4" />
+                View Profile
               </Button>
               <Button
-                onClick={handleCreateRequest}
+                variant="outline"
+                className="gap-2"
+                onClick={() => navigate("/providers")}
               >
+                <Briefcase className="h-4 w-4" />
+                Browse Providers
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => navigate("/create-request")}
+              >
+                <MessageSquare className="h-4 w-4" />
                 Create Request
               </Button>
             </div>
           </div>
-        </header>
 
-        {/* Welcome Card */}
-        <Card className="mb-6 bg-gradient-to-r from-eventura-700 to-eventura-900 text-white">
-          <CardHeader>
-            <CardTitle>Welcome, {user?.firstName}!</CardTitle>
-            <CardDescription className="text-eventura-100">
-              Manage your event services and connect with professionals.
-            </CardDescription>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <Card 
+              className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300 cursor-pointer"
+              onClick={() => navigate("/requests")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{requests.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total service requests created
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300 cursor-pointer"
+              onClick={() => navigate("/requests")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{activeRequests.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Currently open requests
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300 cursor-pointer"
+              onClick={() => navigate("/ongoing-requests")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Ongoing Requests</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ongoingRequests.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Requests in progress
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300 cursor-pointer"
+              onClick={() => navigate("/ongoing-requests?tab=completed")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Completed Requests</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{completedRequests.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Successfully completed requests
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300 cursor-pointer"
+              onClick={() => navigate("/profile")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Profile Status</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-              <div className="mb-4 sm:mb-0">
-                <p className="text-eventura-100">
-                  Get started by creating a service request or browsing providers.
+                <div className="text-2xl font-bold">Active</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your profile is visible to providers
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="requests">Requests</TabsTrigger>
+              <TabsTrigger value="ongoing">Ongoing</TabsTrigger>
+              <TabsTrigger value="providers">Providers</TabsTrigger>
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Active Requests */}
+                <Card className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300">
+                  <CardHeader>
+                    <CardTitle>Active Requests</CardTitle>
+                    <CardDescription>Your open service requests</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {isLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                        </div>
+                      ) : activeRequests.length === 0 ? (
+                        <div className="text-center py-4 text-muted-foreground">
+                          No active requests found
+                        </div>
+                      ) : (
+                        activeRequests.map((request) => (
+                          <div key={request.id} className="flex items-start gap-4 p-4 rounded-lg border bg-gray-200">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-medium">{request.title}</h3>
+                                <Badge variant={getStatusBadgeVariant(request.status)}>
+                                  {request.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {format(new Date(request.eventDate), "MMMM d, yyyy")}
+                              </p>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>${request.budget.toLocaleString()}</span>
+                                <span>•</span>
+                                <span>{request.location}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewRequestDetails(request.id)}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setRequestToDelete(request)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
               </div>
+                        ))
+                      )}
               <Button 
-                variant="secondary" 
-                className="whitespace-nowrap"
-                onClick={handleCreateRequest}
-              >
-                Create Request
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate("/requests")}
+                      >
+                        View All Requests
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Dashboard Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Assigned Requests */}
-          <Card>
+                <Card className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300">
             <CardHeader>
               <CardTitle>Assigned Requests</CardTitle>
               <CardDescription>Requests with assigned providers</CardDescription>
@@ -167,116 +343,213 @@ const ClientDashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 {isLoading ? (
-                  <div className="text-center py-4">Loading requests...</div>
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                        </div>
                 ) : assignedRequests.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
+                        <div className="text-center py-4 text-muted-foreground">
                     No assigned requests found
                   </div>
                 ) : (
                   assignedRequests.map((request) => (
-                    <div key={request.id} className="p-4 border rounded-md bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div>
-                          <h3 className="font-medium text-gray-900">{request.title}</h3>
-                          <p className="text-sm text-gray-500">
+                          <div key={request.id} className="flex items-start gap-4 p-4 rounded-lg border bg-gray-200">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-medium">{request.title}</h3>
+                                <Badge variant={getStatusBadgeVariant(request.status)}>
+                                  {request.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
                             {format(new Date(request.eventDate), "MMMM d, yyyy")}
                           </p>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>${request.budget.toLocaleString()}</span>
+                                <span>•</span>
+                                <span>{request.location}</span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRequestDetails(request.id)}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate("/requests")}
+                      >
+                        View All Requests
+                      </Button>
                     </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="requests" className="space-y-4">
+              <Card className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300">
+                <CardHeader>
+                  <CardTitle>All Requests</CardTitle>
+                  <CardDescription>Manage your service requests</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                      </div>
+                    ) : requests.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">
+                        No requests found
+                      </div>
+                    ) : (
+                      requests.map((request) => (
+                        <div key={request.id} className="flex items-start gap-4 p-4 rounded-lg border bg-gray-200">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium">{request.title}</h3>
+                              <Badge variant={getStatusBadgeVariant(request.status)}>
                             {request.status}
-                    </span>
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(request.eventDate), "MMMM d, yyyy")}
+                            </p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>${request.budget.toLocaleString()}</span>
+                              <span>•</span>
+                              <span>{request.location}</span>
+                              <span>•</span>
+                              <span>{request.serviceType}</span>
                         </div>
                   </div>
-                  <div className="mt-2 text-sm text-gray-500">
-                        <p>{request.serviceType}</p>
-                        {request.assignedProviderId && (
-                          <p className="text-blue-600">Provider assigned</p>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRequestDetails(request.id)}
+                            >
+                              View
+                            </Button>
+                            {request.status === "OPEN" && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setRequestToDelete(request)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                         )}
                   </div>
                 </div>
                   ))
                 )}
-              </div>
               <Button 
                 variant="outline" 
-                className="mt-4 w-full"
-                onClick={handleViewMyRequests}
+                      className="w-full"
+                      onClick={() => navigate("/create-request")}
               >
-                View All Requests
+                      Create New Request
               </Button>
+                  </div>
             </CardContent>
           </Card>
+            </TabsContent>
 
-          {/* Active Requests */}
-          <Card>
+            <TabsContent value="ongoing" className="space-y-4">
+              <Card className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300">
             <CardHeader>
-              <CardTitle>Active Requests</CardTitle>
-              <CardDescription>Your open service requests</CardDescription>
+                  <CardTitle>Ongoing Requests</CardTitle>
+                  <CardDescription>Requests that are currently in progress</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {isLoading ? (
-                  <div className="text-center py-4">Loading requests...</div>
-                ) : activeRequests.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
-                    No active requests found
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                      </div>
+                    ) : ongoingRequests.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">
+                        No ongoing requests found
                   </div>
                 ) : (
-                  activeRequests.map((request) => (
-                    <div key={request.id} className="p-4 border rounded-md bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div>
-                          <h3 className="font-medium text-gray-900">{request.title}</h3>
-                          <p className="text-sm text-gray-500">
+                      ongoingRequests.map((request) => (
+                        <div key={request.id} className="flex items-start gap-4 p-4 rounded-lg border bg-gray-200">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium">{request.title}</h3>
+                              <Badge variant={getStatusBadgeVariant(request.status)}>
+                                {request.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
                             {format(new Date(request.eventDate), "MMMM d, yyyy")}
                           </p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>${request.budget.toLocaleString()}</span>
+                              <span>•</span>
+                              <span>{request.location}</span>
+                              <span>•</span>
+                              <span>{request.serviceType}</span>
+                            </div>
+                            {request.assignedProviderId && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>Provider ID: {request.assignedProviderId}</span>
+                              </div>
+                            )}
                     </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                            {request.status}
-                    </span>
-                          <button
-                            onClick={() => setRequestToDelete(request)}
-                            className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-                            title="Delete request"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </button>
-                        </div>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-500">
-                        <p>{request.serviceType}</p>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRequestDetails(request.id)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => navigate(`/requests/${request.id}/chat`)}
+                            >
+                              Chat
+                            </Button>
                   </div>
                 </div>
                   ))
                 )}
-              </div>
               <Button 
                 variant="outline" 
-                className="mt-4 w-full"
-                onClick={handleViewMyRequests}
+                      className="w-full"
+                      onClick={() => navigate("/ongoing-requests")}
               >
-                View All Requests
+                      View All Ongoing Requests
               </Button>
+                  </div>
             </CardContent>
           </Card>
+            </TabsContent>
 
-          {/* Recommended Providers */}
-          <Card>
+            <TabsContent value="providers" className="space-y-4">
+              <Card className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300">
             <CardHeader>
               <CardTitle>Recommended Providers</CardTitle>
               <CardDescription>Top-rated professionals for your needs</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="p-4 border rounded-md bg-gray-50">
+                    <div className="p-4 rounded-lg border bg-gray-200">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-eventura-100 flex items-center justify-center text-eventura-700 mr-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
                       LP
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Luxury Photography</h3>
+                          <h3 className="font-medium">Luxury Photography</h3>
                       <div className="flex items-center">
                         <div className="flex">
                           {[...Array(5)].map((_, i) => (
@@ -285,19 +558,19 @@ const ClientDashboard = () => {
                             </svg>
                           ))}
                         </div>
-                        <span className="ml-1 text-sm text-gray-500">(24 reviews)</span>
+                            <span className="ml-1 text-sm text-muted-foreground">(24 reviews)</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 border rounded-md bg-gray-50">
+                    <div className="p-4 rounded-lg border bg-gray-200">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-eventura-100 flex items-center justify-center text-eventura-700 mr-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
                       DP
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Divine Planners</h3>
+                          <h3 className="font-medium">Divine Planners</h3>
                       <div className="flex items-center">
                         <div className="flex">
                           {[...Array(5)].map((_, i) => (
@@ -306,7 +579,7 @@ const ClientDashboard = () => {
                             </svg>
                           ))}
                         </div>
-                        <span className="ml-1 text-sm text-gray-500">(18 reviews)</span>
+                            <span className="ml-1 text-sm text-muted-foreground">(18 reviews)</span>
                       </div>
                     </div>
                   </div>
@@ -315,15 +588,118 @@ const ClientDashboard = () => {
               <Button 
                 variant="outline" 
                 className="mt-4 w-full"
-                onClick={handleBrowseProviders}
+                    onClick={() => navigate("/providers")}
               >
                 Browse All Providers
               </Button>
             </CardContent>
           </Card>
+            </TabsContent>
+
+            <TabsContent value="profile" className="space-y-4">
+              <Card className="bg-gray-200 border border-gray-200 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:bg-gray-300">
+                <CardHeader>
+                  <CardTitle>Profile Overview</CardTitle>
+                  <CardDescription>Your client profile information</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="w-8 h-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{user?.firstName} {user?.lastName}</h3>
+                        <p className="text-sm text-muted-foreground">{user?.email}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Profile Status</span>
+                        <Badge variant="default">Active</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Member Since</span>
+                        <span className="text-sm">January 2024</span>
+                      </div>
+                    </div>
+                    <Button className="w-full" onClick={() => navigate("/profile")}>
+                      Edit Profile
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
+      {/* Request Details Dialog */}
+      <Dialog open={selectedRequest !== null} onOpenChange={() => setSelectedRequest(null)}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Request Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about the service request
+            </DialogDescription>
+          </DialogHeader>
+          {isDetailsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : selectedRequest && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Title</p>
+                  <p>{selectedRequest.title}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Event Date</p>
+                  <p>{format(new Date(selectedRequest.eventDate), "MMMM d, yyyy")}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Location</p>
+                  <p>{selectedRequest.location}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Budget</p>
+                  <p>${selectedRequest.budget.toLocaleString()}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Service Type</p>
+                  <p>{selectedRequest.serviceType}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <Badge variant={getStatusBadgeVariant(selectedRequest.status)}>
+                    {selectedRequest.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Description</p>
+                <p className="text-sm">{selectedRequest.description}</p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedRequest(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => navigate(`/requests/${selectedRequest.id}`)}
+                >
+                  View Full Details
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!requestToDelete} onOpenChange={() => setRequestToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

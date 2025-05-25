@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { ArrowLeft, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import BackButton from "@/components/BackButton";
 import {
   Table,
   TableBody,
@@ -176,15 +177,7 @@ const RequestPitches = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Pitches for {request?.title || "Request"}
@@ -193,6 +186,7 @@ const RequestPitches = () => {
               View all pitches submitted for this request
             </p>
           </div>
+          <BackButton />
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-x-auto">
@@ -218,12 +212,24 @@ const RequestPitches = () => {
                     {pitches.map((pitch) => (
                       <TableRow 
                         key={pitch.id}
-                        className={pitch.providerId === request?.assignedProviderId ? "bg-green-50" : ""}
+                        className={`${
+                          pitch.providerId === request?.assignedProviderId 
+                            ? "bg-green-50 hover:bg-green-100" 
+                            : "hover:bg-gray-50"
+                        }`}
                       >
                         <TableCell>
-                          {providerDetails[pitch.providerId]
-                            ? `${providerDetails[pitch.providerId].firstName} ${providerDetails[pitch.providerId].lastName}`
-                            : `Provider #${pitch.providerId}`}
+                          <div className="flex items-center gap-2">
+                            {providerDetails[pitch.providerId]
+                              ? `${providerDetails[pitch.providerId].firstName} ${providerDetails[pitch.providerId].lastName}`
+                              : `Provider #${pitch.providerId}`}
+                            {pitch.providerId === request?.assignedProviderId && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                <Check className="w-3 h-3 mr-1" />
+                                Selected
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500">
                             {providerDetails[pitch.providerId]?.email}
                           </div>
@@ -241,21 +247,14 @@ const RequestPitches = () => {
                             >
                               View Details
                             </Button>
-                            {canAssign && (
+                            {canAssign && !request?.assignedProviderId && (
                               <Button
-                                variant={pitch.providerId === request?.assignedProviderId ? "outline" : "default"}
+                                variant="default"
                                 size="sm"
                                 onClick={() => handleAssignProvider(pitch.providerId, pitch.id)}
-                                disabled={isAssigning || pitch.providerId === request?.assignedProviderId}
+                                disabled={isAssigning}
                               >
-                                {pitch.providerId === request?.assignedProviderId ? (
-                                  <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Assigned
-                                  </>
-                                ) : (
-                                  "Assign"
-                                )}
+                                Assign
                               </Button>
                             )}
                           </div>

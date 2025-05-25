@@ -96,98 +96,98 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <Dashboard />
+                <Dashboard />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <Profile />
+                <Profile />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/provider/profile" element={
               <ProtectedRoute requiredRole="PROVIDER">
                 <RouteGuard>
-                  <ProviderProfile />
+                <ProviderProfile />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/providers" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <ProvidersList />
+                <ProvidersList />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/providers/:providerId" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <ProviderDetails />
+                <ProviderDetails />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/requests" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <MyRequests />
+                <MyRequests />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/requests/:requestId/pitches" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <RequestPitches />
+                <RequestPitches />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/all-requests" element={
               <ProtectedRoute>
                 <RouteGuard>
-                  <AllRequests />
+                <AllRequests />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/create-request" element={
               <ProtectedRoute requiredRole="CLIENT">
                 <RouteGuard>
-                  <CreateRequest />
+                <CreateRequest />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/all-pitches" element={
               <ProtectedRoute requiredRole="PROVIDER">
                 <RouteGuard>
-                  <AllPitches />
+                <AllPitches />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/ongoing-requests" element={
               <ProtectedRoute requiredRole="CLIENT">
                 <RouteGuard>
-                  <OngoingRequests />
+                <OngoingRequests />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/ongoing-work" element={
               <ProtectedRoute requiredRole="PROVIDER">
                 <RouteGuard>
-                  <OngoingWork />
+                <OngoingWork />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/earnings" element={
               <ProtectedRoute requiredRole="PROVIDER">
                 <RouteGuard>
-                  <Earnings />
+                <Earnings />
                 </RouteGuard>
               </ProtectedRoute>
             } />
             <Route path="/provider/portfolio" element={
               <ProtectedRoute requiredRole="PROVIDER">
                 <RouteGuard>
-                  <ProviderPortfolio />
+                <ProviderPortfolio />
                 </RouteGuard>
               </ProtectedRoute>
             } />

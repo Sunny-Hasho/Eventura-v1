@@ -9,7 +9,7 @@ import { ServiceRequestResponse } from "@/types/serviceRequest";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search, Filter, ArrowUpDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,15 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import BackButton from "@/components/BackButton";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AllPitches = () => {
   const { toast } = useToast();
@@ -45,6 +54,9 @@ const AllPitches = () => {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [isRequestLoading, setIsRequestLoading] = useState(false);
   const [pitchStatuses, setPitchStatuses] = useState<Record<number, string>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [sortBy, setSortBy] = useState<string>("DATE_DESC");
 
   useEffect(() => {
     if (!authState.isAuthenticated) {
@@ -83,13 +95,13 @@ const AllPitches = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "WIN":
-        return "bg-green-500";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "LOSE":
-        return "bg-red-500";
+        return "bg-slate-50 text-slate-700 border-slate-200";
       case "PENDING":
-        return "bg-yellow-500";
+        return "bg-indigo-50 text-indigo-700 border-indigo-200";
       default:
-        return "bg-gray-500";
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   };
 
@@ -156,93 +168,179 @@ const AllPitches = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Your Pitches</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Track all your submitted proposals
-          </p>
-        </header>
+  const filteredAndSortedPitches = pitches
+    .filter(pitch => {
+      const matchesSearch = pitch.pitchDetails.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pitch.id.toString().includes(searchQuery);
+      const matchesStatus = statusFilter === "ALL" || pitchStatuses[pitch.id] === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "PRICE_ASC":
+          return a.proposedPrice - b.proposedPrice;
+        case "PRICE_DESC":
+          return b.proposedPrice - a.proposedPrice;
+        case "DATE_ASC":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "DATE_DESC":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Pitches</CardTitle>
-            <CardDescription>View and manage your submitted proposals</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="text-center py-4">Loading pitches...</div>
-              ) : pitches.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  No pitches found
+  return (
+    <div className="min-h-screen bg-gray-200">
+      <Navbar />
+      <div className="max-w-7xl  bg-white rounded-2xl mt-8 mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Your Pitches</h1>
+            <p className="text-sm text-gray-500">Track your proposals</p>
+          </div>
+          <BackButton />
+        </div>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
+              <div>
+                <CardTitle className="text-base">All Pitches</CardTitle>
+                <CardDescription className="text-xs">View and manage proposals</CardDescription>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="absolute left-2 top-2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 h-8 text-sm"
+                  />
                 </div>
-              ) : (
-                pitches.map((pitch) => (
-                  <div key={pitch.id} className="p-4 border rounded-md bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Pitch #{pitch.id}</h3>
-                        <p className="text-sm text-gray-500">
-                          Submitted: {format(new Date(pitch.createdAt), "MMMM d, yyyy")}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[140px] h-8 text-sm">
+                    <Filter className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Status</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="WIN">Won</SelectItem>
+                    <SelectItem value="LOSE">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-[140px] h-8 text-sm">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DATE_DESC">Newest</SelectItem>
+                    <SelectItem value="DATE_ASC">Oldest</SelectItem>
+                    <SelectItem value="PRICE_DESC">Price ↓</SelectItem>
+                    <SelectItem value="PRICE_ASC">Price ↑</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            {isLoading ? (
+              <div className="text-center py-2 text-sm text-gray-500">Loading...</div>
+            ) : filteredAndSortedPitches.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">No pitches found</p>
+                {searchQuery || statusFilter !== "ALL" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 text-xs"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("ALL");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                ) : null}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredAndSortedPitches.map((pitch) => (
+                  <div key={pitch.id} className="p-3 border rounded-md bg-white hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-gray-900">#{pitch.id}</h3>
+                          {pitchStatuses[pitch.id] && (
+                            <Badge className={`${getStatusColor(pitchStatuses[pitch.id])} text-xs font-normal`}>
+                              {pitchStatuses[pitch.id]}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
+                          <span>{format(new Date(pitch.createdAt), "MMM d, yyyy")}</span>
+                          <span>${pitch.proposedPrice.toLocaleString()}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-600 line-clamp-1">
+                          {pitch.pitchDetails}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {pitchStatuses[pitch.id] && (
-                          <Badge className={getStatusColor(pitchStatuses[pitch.id])}>
-                            {pitchStatuses[pitch.id]}
-                          </Badge>
-                        )}
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="h-7 w-7 text-gray-400 hover:text-gray-600"
                           onClick={() => setPitchToDelete(pitch.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => handleViewDetails(pitch.id)}
+                        >
+                          View
                         </Button>
                       </div>
                     </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      <p>Proposed Price: ${pitch.proposedPrice.toLocaleString()}</p>
-                      <p className="mt-1">Details: {pitch.pitchDetails}</p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-3 w-full"
-                      onClick={() => handleViewDetails(pitch.id)}
-                    >
-                      View Details
-                    </Button>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-                  disabled={currentPage === 0}
-                >
-                  Previous
-                </Button>
-                <span className="py-2 px-4">
-                  Page {currentPage + 1} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-                  disabled={currentPage === totalPages - 1}
-                >
-                  Next
-                </Button>
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <div className="text-xs text-gray-500">
+                  {filteredAndSortedPitches.length} of {totalElements} pitches
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    Prev
+                  </Button>
+                  <span className="px-2 py-1 text-xs text-gray-500">
+                    {currentPage + 1}/{totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+                    disabled={currentPage === totalPages - 1}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -360,7 +458,7 @@ const AllPitches = () => {
               <div className="flex justify-end gap-2 mt-4">
                 <Button
                   variant="outline"
-                  onClick={() => navigate(`/requests/${selectedRequest.id}`)}
+                  onClick={() => navigate('/all-requests')}
                 >
                   View Full Request Details
                 </Button>

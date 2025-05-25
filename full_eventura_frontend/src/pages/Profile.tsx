@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -11,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { User, Edit, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import BackButton from "@/components/BackButton";
 
 const Profile = () => {
   const { authState, updateProfile, deleteAccount } = useAuth();
@@ -28,7 +29,6 @@ const Profile = () => {
   useEffect(() => {
     document.title = "My Profile | Eventura";
 
-    // Populate form data when user data is available
     if (user) {
       setFormData({
         firstName: user.firstName,
@@ -69,7 +69,6 @@ const Profile = () => {
     e.preventDefault();
     
     try {
-      // Only include password if it's not empty
       const updateData: UpdateUserRequest = {
         ...formData,
         ...(password ? { password } : {})
@@ -105,157 +104,225 @@ const Profile = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">My Profile</h1>
-          <div className="flex space-x-2">
-            {!isEditing ? (
-              <Button variant="outline" onClick={() => setIsEditing(true)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Profile
-              </Button>
-            ) : null}
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Account
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your
-                    account and remove all your data from our servers.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-                    Delete Account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
+  const getRoleGradient = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'bg-gradient-to-br from-[#849fe3] to-[#4a6eb0]';
+      case 'CLIENT':
+        return 'bg-gradient-to-br from-[#8184b3] to-[#4a6eb0]';
+      case 'PROVIDER':
+        return 'bg-gradient-to-br from-[#849fe3] to-[#8184b3]';
+      default:
+        return 'bg-gradient-to-br from-[#849fe3] to-[#4a6eb0]';
+    }
+  };
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>
-              {isEditing 
-                ? "Update your personal details below" 
-                : "View and manage your account information"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    readOnly={!isEditing}
-                    className={!isEditing ? "bg-gray-50" : ""}
-                  />
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'text-[#849fe3] border-[#849fe3]';
+      case 'CLIENT':
+        return 'text-[#8184b3] border-[#8184b3]';
+      case 'PROVIDER':
+        return 'text-[#4a6eb0] border-[#4a6eb0]';
+      default:
+        return 'text-[#849fe3] border-[#849fe3]';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-200">
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col gap-4 mb-8">
+            <div className="flex items-center">
+              <BackButton />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+              <p className="text-sm text-gray-600">Manage your account settings and preferences</p>
+            </div>
+          </div>
+          <div className="rounded-2xl shadow-xl overflow-hidden">
+            {/* Profile Header */}
+            <div className={cn("h-64 relative", getRoleGradient(user?.role || 'ADMIN'))}>
+              <div className="absolute right-16 top-8">
+                <div className="w-40 h-40 rounded-full bg-white/20 border-4 border-white/20 overflow-hidden">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="w-20 h-20 text-white" />
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    readOnly={!isEditing}
-                    className={!isEditing ? "bg-gray-50" : ""}
-                  />
+              </div>
+            </div>
+
+            {/* Profile Content */}
+            <div className="p-12 relative">
+              <div className={cn(
+                "absolute -top-4 right-10 bg-white rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-wider shadow-lg",
+                getRoleBadgeColor(user?.role || 'ADMIN')
+              )}>
+                {user?.role}
+              </div>
+
+
+              <div className="mb-10">
+                <h2 className="text-3xl font-medium text-[#2c2c2c] mb-1.5">
+                  Hello, {user?.firstName}
+                </h2>
+                <div className="flex items-center gap-4 text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-sm">Active Now</span>
+                  </div>
+                  <span className="text-sm">•</span>
+                  <div className="text-sm">
+                    Member since {new Date().toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long' 
+                    })}
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    readOnly={!isEditing}
-                    className={!isEditing ? "bg-gray-50" : ""}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="mobileNumber">Mobile Number</Label>
-                  <Input
-                    id="mobileNumber"
-                    name="mobileNumber"
-                    value={formData.mobileNumber}
-                    onChange={handleChange}
-                    readOnly={!isEditing}
-                    className={!isEditing ? "bg-gray-50" : ""}
-                  />
+                <p className="text-lg text-gray-600 font-normal mt-2">Welcome to your profile.</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider text-gray-500">First Name</Label>
+                    <Input
+                      name="firstName"
+                      value={formData.firstName} 
+                      onChange={handleChange}
+                      readOnly={!isEditing}
+                      className={cn(
+                        "bg-transparent border-gray-200 text-base h-10",
+                        !isEditing && "border-none"
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider text-gray-500">Last Name</Label>
+                    <Input
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      readOnly={!isEditing}
+                      className={cn(
+                        "bg-transparent border-gray-200 text-base h-10",
+                        !isEditing && "border-none"
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider text-gray-500">Email</Label>
+                    <Input
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      readOnly={!isEditing}
+                      className={cn(
+                        "bg-transparent border-gray-200 text-base h-10",
+                        !isEditing && "border-none"
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider text-gray-500">Mobile Number</Label>
+                    <Input
+                      name="mobileNumber"
+                      value={formData.mobileNumber}
+                      onChange={handleChange}
+                      readOnly={!isEditing}
+                      className={cn(
+                        "bg-transparent border-gray-200 text-base h-10",
+                        !isEditing && "border-none"
+                      )}
+                    />
+                  </div>
                 </div>
 
                 {isEditing && (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="password">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider text-gray-500">
                       New Password <span className="text-sm text-gray-500">(leave blank to keep current password)</span>
                     </Label>
                     <Input
-                      id="password"
                       name="password"
                       type="password"
                       value={password}
                       onChange={handlePasswordChange}
                       placeholder="Enter new password"
+                      className="bg-transparent border-gray-200 text-base h-10"
                     />
                   </div>
                 )}
+
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  {!isEditing ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(true)}
+                      className="gap-2 h-9"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCancel}
+                        className="h-9"
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" className="h-9">
+                        Save Changes
+                      </Button>
+                    </>
+                  )}
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="gap-2 h-9">
+                        <Trash2 className="h-4 w-4" />
+                        Delete Account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete your
+                          account and remove all your data from our servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteConfirm}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete Account
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </form>
+
+              <div className="absolute bottom-6 left-12 text-xs text-gray-500 tracking-wider">
+                Copyright © Eventura. ALL RIGHTS RESERVED
               </div>
-
-              {!isEditing && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-gray-500" />
-                    <span className="font-medium">Role:</span>
-                    <span className="text-gray-700">{user?.role}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="font-medium">Account Status:</span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded
-                      ${user?.accountStatus === 'ACTIVE' ? 'bg-green-100 text-green-800' : 
-                       user?.accountStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                       user?.accountStatus === 'SUSPENDED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}
-                    `}>
-                      {user?.accountStatus}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {isEditing && (
-                <div className="mt-6 flex justify-end space-x-3">
-                  <Button type="button" variant="outline" onClick={handleCancel}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    Save Changes
-                  </Button>
-                </div>
-              )}
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
