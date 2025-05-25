@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
@@ -25,20 +24,57 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
-      <div className="flex min-h-[calc(100vh-4rem)] flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Access your Eventura dashboard and manage your events
-          </p>
-        </div>
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+        <div className="relative flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
+          {/* Left Section */}
+          <div className="relative hidden w-1/2 flex-col items-center justify-center bg-gradient-to-br from-[#5A67D8] to-[#4A55A2] p-10 text-white lg:flex">
+            {/* Add background pattern/image here if needed */}
+            {/* Abstract video loop background */}
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-50"
+            >
+              {/* Replace with your video source */}
+              {/* <source src="/path/to/your/abstract-video.mp4" type="video/mp4" /> */}
+              {/* Add other source types for broader browser support */}
+            </video>
+            <div className="z-10 text-center space-y-4">
+              <p className="text-lg font-semibold">You can easily</p>
+              <h2 className="text-4xl font-bold leading-tight">Speed up your work<br />with our Web App</h2>
+            </div>
+            {/* Optional: Add partner icons/text here */}
+            {/* <div className="absolute bottom-10 left-10 z-10 text-sm text-gray-300">
+              Our partners:
+              <div className="flex gap-4 mt-2">
+                <span>Discord</span>
+                <span>Instagram</span>
+                <span>Spotify</span>
+                <span>YouTube</span>
+                <span>TikTok</span>
+              </div>
+            </div> */}
+          </div>
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <AuthForm type="login" onSuccess={handleSuccess} />
+          {/* Right Section (Login Form) */}
+          <div className="w-full lg:w-1/2 p-8 space-y-6">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                Get Started Now
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Please log in to your account to continue.
+              </p>
+            </div>
+
+            <div className="mt-8">
+              <AuthForm type="login" onSuccess={handleSuccess} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

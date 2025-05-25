@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { userService, PageableUserResponse, UserResponse, UserStatus } from "@/services/userService";
@@ -73,113 +72,111 @@ export default function UsersPage() {
   };
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="eventura-admin-theme">
-      <div className="relative min-h-screen bg-background">
-        <AdminSidebar
-          isCollapsed={!isSidebarOpen}
-          onCollapse={() => setIsSidebarOpen(false)}
-        />
-        <div
-          className={cn(
-            "flex min-h-screen flex-col transition-all duration-300",
-            isSidebarOpen ? "md:pl-64" : "md:pl-20"
-          )}
-        >
-          <AdminHeader onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-          <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-                <p className="text-muted-foreground">
-                  Manage platform users and their accounts
-                </p>
-              </div>
+    <div className="relative min-h-screen bg-background">
+      <AdminSidebar
+        isCollapsed={!isSidebarOpen}
+        onCollapse={() => setIsSidebarOpen(false)}
+      />
+      <div
+        className={cn(
+          "flex min-h-screen flex-col transition-all duration-300",
+          isSidebarOpen ? "md:pl-64" : "md:pl-20"
+        )}
+      >
+        <AdminHeader onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+              <p className="text-muted-foreground">
+                Manage platform users and their accounts
+              </p>
             </div>
+          </div>
 
-            <div className="grid gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Users</CardTitle>
-                  <CardDescription>
-                    View and manage all platform users. You can update user status, view details, and manage their roles.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {error && (
-                    <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-100">
-                      {error}
-                    </div>
-                  )}
-                  
-                  {loading ? (
-                    <div className="text-center py-4">Loading users...</div>
-                  ) : users && users.content.length > 0 ? (
-                    <div className="space-y-4">
-                      {users.content.map((user: UserResponse) => (
-                        <div key={user.id} className="p-4 border rounded-md bg-card">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">
-                                {user.firstName} {user.lastName}
-                              </h3>
-                              <p className="text-sm text-muted-foreground">{user.email}</p>
-                              <p className="text-sm text-muted-foreground">{user.mobileNumber}</p>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <Badge className={getRoleBadgeColor(user.role)}>
-                                {user.role}
-                              </Badge>
-                              <Badge className={getStatusBadgeColor(user.accountStatus)}>
-                                {user.accountStatus}
-                              </Badge>
-                            </div>
+          <div className="grid gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Users</CardTitle>
+                <CardDescription>
+                  View and manage all platform users. You can update user status, view details, and manage their roles.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md dark:bg-red-900/50 dark:text-red-100">
+                    {error}
+                  </div>
+                )}
+                
+                {loading ? (
+                  <div className="text-center py-4">Loading users...</div>
+                ) : users && users.content.length > 0 ? (
+                  <div className="space-y-4">
+                    {users.content.map((user: UserResponse) => (
+                      <div key={user.id} className="p-4 border rounded-md bg-card">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">
+                              {user.firstName} {user.lastName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <p className="text-sm text-muted-foreground">{user.mobileNumber}</p>
                           </div>
-                          <div className="mt-3 flex space-x-2">
-                            <Button variant="outline" size="sm">View Details</Button>
-                            <Button variant="outline" size="sm">Edit</Button>
-                            <Button
-                              variant={user.accountStatus === "ACTIVE" ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => handleStatusUpdate(user.id, user.accountStatus)}
-                            >
-                              {user.accountStatus === "ACTIVE" ? "Suspend" : "Activate"}
-                            </Button>
+                          <div className="flex flex-col items-end gap-2">
+                            <Badge className={getRoleBadgeColor(user.role)}>
+                              {user.role}
+                            </Badge>
+                            <Badge className={getStatusBadgeColor(user.accountStatus)}>
+                              {user.accountStatus}
+                            </Badge>
                           </div>
                         </div>
-                      ))}
-                      
-                      {/* Pagination */}
-                      <div className="flex justify-between items-center mt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                          disabled={currentPage === 0}
-                        >
-                          Previous
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          Page {currentPage + 1} of {users.totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentPage(p => p + 1)}
-                          disabled={currentPage >= users.totalPages - 1}
-                        >
-                          Next
-                        </Button>
+                        <div className="mt-3 flex space-x-2">
+                          <Button variant="outline" size="sm">View Details</Button>
+                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button
+                            variant={user.accountStatus === "ACTIVE" ? "destructive" : "default"}
+                            size="sm"
+                            onClick={() => handleStatusUpdate(user.id, user.accountStatus)}
+                          >
+                            {user.accountStatus === "ACTIVE" ? "Suspend" : "Activate"}
+                          </Button>
+                        </div>
                       </div>
+                    ))}
+                    
+                    {/* Pagination */}
+                    <div className="flex justify-between items-center mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                        disabled={currentPage === 0}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage + 1} of {users.totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(p => p + 1)}
+                        disabled={currentPage >= users.totalPages - 1}
+                      >
+                        Next
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      No users found
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </main>
-        </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    No users found
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
-    </ThemeProvider>
+    </div>
   );
 } 

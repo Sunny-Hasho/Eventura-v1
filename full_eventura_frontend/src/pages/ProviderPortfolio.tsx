@@ -37,6 +37,7 @@ import {
   DialogDescription as ConfirmDialogDescription,
   DialogFooter as ConfirmDialogFooter,
 } from "@/components/ui/dialog";
+import BackButton from "@/components/BackButton";
 
 const PAGE_SIZE = 10;
 
@@ -213,21 +214,24 @@ const ProviderPortfolio = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <header className="mb-8 flex justify-between items-center">
+      <div className="max-w-7xl bg-white rounded-2xl mt-8 mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Portfolio</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Portfolio</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Showcase your past work and projects
+              Manage your portfolio items and showcase your work
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Portfolio Item
-          </Button>
-        </header>
+          <div className="flex items-center gap-4">
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Portfolio Item
+            </Button>
+            <BackButton />
+          </div>
+        </div>
 
         {portfolioEnabled ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

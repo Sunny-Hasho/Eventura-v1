@@ -31,6 +31,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import BackButton from "@/components/BackButton";
 
 const AllRequests = () => {
   const navigate = useNavigate();
@@ -301,8 +303,9 @@ const AllRequests = () => {
   }, [myPitches]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
+      <div className="max-w-7xl   bg-white rounded-2xl mt-8 mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
@@ -311,6 +314,7 @@ const AllRequests = () => {
               Browse and manage your service requests
             </p>
           </div>
+          <BackButton />
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
@@ -358,10 +362,7 @@ const AllRequests = () => {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredRequests.map((request) => (
-                      <div
-                        key={request.id}
-                        className="bg-white rounded-2xl shadow-md p-6 flex flex-col justify-between min-h-[260px] transition hover:shadow-lg"
-                      >
+                      <Card key={request.id} className="bg-gray-200 rounded-2xl shadow-md p-6 flex flex-col justify-between min-h-[260px] transition hover:shadow-lg">
                         <div className="flex items-center justify-between mb-2">
                           <div className="font-semibold text-lg">{request.title}</div>
                           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{request.status}</span>
@@ -395,7 +396,7 @@ const AllRequests = () => {
                             </button>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                   
@@ -438,8 +439,8 @@ const AllRequests = () => {
               ) : (
                 <>
                   <div className="min-w-[800px]">
-                    <Table>
-                      <TableHeader>
+                    <Table className="w-full bg-gray-200">
+                      <TableHeader className="bg-gray-300">
                         <TableRow>
                           <TableHead>Title</TableHead>
                           <TableHead>Event</TableHead>
@@ -456,7 +457,7 @@ const AllRequests = () => {
                           const myPitchForRequest = myPitches.find(pitch => pitch.requestId === request.id);
                           const pitchStatus = myPitchForRequest ? pitchStatuses[myPitchForRequest.id] : undefined;
                           return (
-                            <TableRow key={request.id}>
+                            <TableRow key={request.id} className="bg-gray-200">
                               <TableCell className="font-medium">{request.title}</TableCell>
                               <TableCell>{request.eventName}</TableCell>
                               <TableCell>{format(new Date(request.eventDate), "MMM d, yyyy")}</TableCell>
@@ -519,8 +520,8 @@ const AllRequests = () => {
               ) : (
                 <>
                   <div className="min-w-[800px]">
-                    <Table>
-                      <TableHeader>
+                    <Table className="w-full bg-gray-200">
+                      <TableHeader className="bg-gray-300">
                         <TableRow>
                           <TableHead>Title</TableHead>
                           <TableHead>Event</TableHead>
@@ -534,19 +535,19 @@ const AllRequests = () => {
                       </TableHeader>
                       <TableBody>
                         {myRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium">{request.title}</TableCell>
-                            <TableCell>{request.eventName}</TableCell>
-                            <TableCell>{format(new Date(request.eventDate), "MMM d, yyyy")}</TableCell>
-                            <TableCell>{request.location}</TableCell>
-                            <TableCell>{request.serviceType}</TableCell>
-                            <TableCell>
+                          <TableRow key={request.id} className="bg-gray-200">
+                            <TableCell className="font-medium bg-gray-200">{request.title}</TableCell>
+                            <TableCell className="bg-gray-200">{request.eventName}</TableCell>
+                            <TableCell className="bg-gray-200">{format(new Date(request.eventDate), "MMM d, yyyy")}</TableCell>
+                            <TableCell className="bg-gray-200">{request.location}</TableCell>
+                            <TableCell className="bg-gray-200">{request.serviceType}</TableCell>
+                            <TableCell className="bg-gray-200">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
                                 {request.status}
                               </span>
                             </TableCell>
-                            <TableCell>${request.budget.toLocaleString()}</TableCell>
-                            <TableCell className="text-right space-x-2">
+                            <TableCell className="bg-gray-200">${request.budget.toLocaleString()}</TableCell>
+                            <TableCell className="text-right space-x-2 bg-gray-200">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -637,6 +638,7 @@ const AllRequests = () => {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };

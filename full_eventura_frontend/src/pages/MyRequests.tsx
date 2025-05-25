@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BackButton from "@/components/BackButton";
 
 const MyRequests = () => {
   const navigate = useNavigate();
@@ -226,9 +227,12 @@ const MyRequests = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
+        <BackButton />
+      </div>
+      <div className="bg-white rounded-2xl shadow  container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Requests</h1>
