@@ -150,7 +150,7 @@ const ClientDashboard = () => {
               <Button
                 variant="outline"
                 className="gap-2"
-                onClick={() => navigate("/client/profile")}
+                onClick={() => navigate("/profile")}
               >
                 <User className="h-4 w-4" />
                 View Profile
@@ -689,7 +689,7 @@ const ClientDashboard = () => {
                   Close
                 </Button>
                 <Button
-                  onClick={() => navigate(`/requests/${selectedRequest.id}`)}
+                  onClick={() => navigate("/requests")}
                 >
                   View Full Details
                 </Button>

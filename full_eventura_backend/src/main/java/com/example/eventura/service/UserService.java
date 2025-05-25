@@ -89,11 +89,10 @@ public class UserService {
         try {
             User.AccountStatus newStatus = User.AccountStatus.valueOf(normalizedStatus);
             // Optional: Enforce state transition rules (uncomment if desired)
-            /*
+
             if (user.getAccountStatus() == User.AccountStatus.DELETED) {
                 throw new IllegalStateException("Cannot change status of a DELETED account");
             }
-            */
             user.setAccountStatus(newStatus);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid status: " + status + ". Must be one of: ACTIVE, SUSPENDED, DELETED");
