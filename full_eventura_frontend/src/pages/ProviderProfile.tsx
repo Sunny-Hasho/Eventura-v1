@@ -10,6 +10,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { portfolioService } from "@/services/portfolioService";
 import { PortfolioResponse } from "@/types/portfolio";
+import { cn } from "@/lib/utils";
+import { User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+
+const getRoleGradient = (role: string) => {
+  switch (role) {
+    case 'ADMIN':
+      return 'bg-gradient-to-br from-[#849fe3] to-[#4a6eb0]';
+    case 'CLIENT':
+      return 'bg-gradient-to-br from-[#8184b3] to-[#4a6eb0]';
+    case 'PROVIDER':
+      return 'bg-gradient-to-br from-[#849fe3] to-[#8184b3]';
+    default:
+      return 'bg-gradient-to-br from-[#849fe3] to-[#4a6eb0]';
+  }
+};
+
+const getRoleBadgeColor = (role: string) => {
+  switch (role) {
+    case 'ADMIN':
+      return 'text-[#849fe3] border-[#849fe3]';
+    case 'CLIENT':
+      return 'text-[#8184b3] border-[#8184b3]';
+    case 'PROVIDER':
+      return 'text-[#4a6eb0] border-[#4a6eb0]';
+    default:
+      return 'text-[#849fe3] border-[#849fe3]';
+  }
+};
 
 const ProviderProfile = () => {
   const navigate = useNavigate();
@@ -111,110 +141,168 @@ const ProviderProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold">
-              {profile ? (isEditing ? "Edit Profile" : "View Profile") : "Create Provider Profile"}
-            </h1>
-            <p className="mt-2 text-gray-600">
-              {profile
-                ? isEditing
-                  ? "Update your provider profile information"
-                  : "View your provider profile details"
-                : "Set up your provider profile to start receiving service requests"}
-            </p>
-          </div>
-
-          {profile && !isEditing ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{profile.companyName}</CardTitle>
-                <CardDescription>
-                  {profile.isVerified ? "Verified Provider" : "Pending Verification"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-900">Service Type</h3>
-                  <p className="text-gray-600">{profile.serviceType}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Address</h3>
-                  <p className="text-gray-600">{profile.address}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Mobile Number</h3>
-                  <p className="text-gray-600">{profile.mobileNumber}</p>
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                  <Button variant="outline" onClick={() => navigate("/dashboard")}>
-                    Back to Dashboard
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="rounded-lg bg-white p-6 shadow">
-              <ProviderProfileForm
-                initialData={profile || undefined}
-                onSubmit={handleSubmit}
-                submitLabel={profile ? "Update Profile" : "Create Profile"}
-              />
-              {profile && (
-                <Button
-                  variant="outline"
-                  className="mt-4 w-full"
-                  onClick={() => setIsEditing(false)}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-        {profileExists && (
-          <section className="mt-10">
-            <h2 className="text-2xl font-bold mb-4">My Portfolio</h2>
-            {portfolioLoading ? (
-              <div>Loading portfolio...</div>
-            ) : portfolio.length === 0 ? (
-              <div className="text-gray-500">No portfolio items found.</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {portfolio.map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <div className="aspect-video relative">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="object-cover w-full h-full"
-                      />
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Profile Section */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                {/* Profile Header */}
+                <div className={cn("h-64 relative", getRoleGradient(authState.user?.role || 'PROVIDER'))}>
+                  <div className="absolute right-16 top-8">
+                    <div className="w-40 h-40 rounded-full bg-white/20 border-4 border-white/20 overflow-hidden">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="w-20 h-20 text-white" />
+                      </div>
                     </div>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{item.title}</CardTitle>
-                      <CardDescription>
-                        {item.projectDate} • {item.eventType}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4">{item.description}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+                  </div>
+                </div>
+
+                {/* Profile Content */}
+                <div className="p-12 relative">
+                  <div className={cn(
+                    "absolute -top-4 right-10 bg-white rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-wider shadow-lg",
+                    getRoleBadgeColor(authState.user?.role || 'PROVIDER')
+                  )}>
+                    {authState.user?.role}
+                  </div>
+
+                  <div className="mb-10">
+                    <h2 className="text-3xl font-medium text-[#2c2c2c] mb-1.5">
+                      Hello, {authState.user?.firstName}
+                    </h2>
+                    <div className="flex items-center gap-4 text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        <span className="text-sm">Active Now</span>
+                      </div>
+                      <span className="text-sm">•</span>
+                      <div className="text-sm">
+                        Member since {new Date().toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long' 
+                        })}
+                      </div>
+                    </div>
+                    <p className="text-lg text-gray-600 font-normal mt-2">Welcome to your provider profile.</p>
+                  </div>
+
+                  {profile && !isEditing ? (
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-wider text-gray-500">Company Name</Label>
+                          <div className="text-base font-medium">{profile.companyName}</div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-wider text-gray-500">Service Type</Label>
+                          <div className="text-base font-medium">{profile.serviceType}</div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-wider text-gray-500">Address</Label>
+                          <div className="text-base font-medium">{profile.address}</div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-wider text-gray-500">Mobile Number</Label>
+                          <div className="text-base font-medium">{profile.mobileNumber}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={profile.isVerified ? "default" : "secondary"}>
+                            {profile.isVerified ? "Verified Provider" : "Pending Verification"}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-3">
+                          <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                            Back to Dashboard
+                          </Button>
+                          <Button onClick={() => setIsEditing(true)}>
+                            Edit Profile
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      <ProviderProfileForm
+                        initialData={profile || undefined}
+                        onSubmit={handleSubmit}
+                        submitLabel={profile ? "Update Profile" : "Create Profile"}
+                      />
+                      {profile && (
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setIsEditing(false)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-6 left-12 text-xs text-gray-500 tracking-wider">
+                    Copyright © Eventura. ALL RIGHTS RESERVED
+                  </div>
+                </div>
               </div>
-            )}
-            <Button className="mt-6" onClick={() => navigate("/provider/portfolio")}>Manage Portfolio</Button>
-          </section>
-        )}
-        {!profileExists && (
-          <div className="text-center text-gray-500 mt-10">
-            Set up your provider profile to view and manage your portfolio.
+            </div>
+
+            {/* Portfolio Section */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden sticky top-8">
+                <div className="p-6">
+                  <h2 className="text-2xl font-medium text-[#2c2c2c] mb-6">My Portfolio</h2>
+                  {profileExists ? (
+                    <>
+                      {portfolioLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                      ) : portfolio.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">No portfolio items found.</div>
+                      ) : (
+                        <div className="space-y-6">
+                          {portfolio.map((item) => (
+                            <Card key={item.id} className="overflow-hidden border border-gray-200">
+                              <div className="aspect-video relative">
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.title}
+                                  className="object-cover w-full h-full"
+                                />
+                              </div>
+                              <CardHeader className="p-4">
+                                <CardTitle className="text-lg">{item.title}</CardTitle>
+                                <CardDescription>
+                                  {item.projectDate} • {item.eventType}
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent className="p-4 pt-0">
+                                <p className="text-sm text-gray-600">{item.description}</p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                      <Button className="w-full mt-6" onClick={() => navigate("/provider/portfolio")}>
+                        Manage Portfolio
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      Set up your provider profile to view and manage your portfolio.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

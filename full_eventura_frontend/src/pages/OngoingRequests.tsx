@@ -29,6 +29,7 @@ import { User, Mail, Phone, MapPin, CheckCircle2, Clock, AlertCircle, CheckCircl
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { paymentService } from "@/services/paymentService";
 import { reviewService } from "@/services/reviewService";
+import BackButton from "@/components/BackButton";
 
 const OngoingRequests = () => {
   const { authState } = useAuth();
@@ -255,32 +256,35 @@ const OngoingRequests = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <header className="mb-8 flex justify-between items-start">
+      <div className="container mx-auto px-4 py-8">
+        <BackButton />
+      </div>
+      <div className="bg-white rounded-2xl shadow container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
           <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ongoing Requests</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            View and manage your assigned service requests
-          </p>
+            <h1 className="text-3xl font-bold text-gray-900">Ongoing Requests</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              View and manage your assigned service requests
+            </p>
           </div>
           <div className="flex gap-4">
-            <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
+            <div className="bg-gray-200 rounded-lg shadow p-4 flex items-center gap-2">
               <Clock className="h-5 w-5 text-blue-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">{statusSummary.assigned}</p>
                 <p className="text-xs text-gray-500">Assigned</p>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
+            <div className="bg-gray-200 rounded-lg shadow p-4 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">{statusSummary.completed}</p>
                 <p className="text-xs text-gray-500">Completed</p>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 flex items-center gap-2">
+            <div className="bg-gray-200  rounded-lg shadow p-4 flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">{statusSummary.pending}</p>
@@ -288,7 +292,7 @@ const OngoingRequests = () => {
               </div>
             </div>
           </div>
-        </header>
+        </div>
 
         <Tabs value={tab} onValueChange={handleTabChange}>
           <TabsList className="mb-6">

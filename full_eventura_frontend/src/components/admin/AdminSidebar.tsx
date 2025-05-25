@@ -75,6 +75,11 @@ const sidebarCategories: SidebarCategory[] = [
         href: "/admin/requests",
       },
       {
+        title: "Packages",
+        icon: Package,
+        href: "/admin/packages",
+      },
+      {
         title: "Calendar",
         icon: Calendar,
         href: "/admin/calendar",

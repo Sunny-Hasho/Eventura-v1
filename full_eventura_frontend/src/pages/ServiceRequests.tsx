@@ -99,8 +99,7 @@ const ServiceRequests = () => {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Service Requests</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900">Service ss
             {authState.user?.role === "CLIENT" ? "View your service requests" : "Browse all service requests"}
           </p>
         </div>
@@ -138,7 +137,7 @@ const ServiceRequests = () => {
         </div>
 
         {/* Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRequests.map((request) => (
             <div
               key={request.id}

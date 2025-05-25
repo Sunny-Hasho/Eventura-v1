@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import BackButton from "@/components/BackButton";
 
 const ProvidersList = () => {
   const navigate = useNavigate();
@@ -94,14 +95,23 @@ const ProvidersList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Browse Providers</h1>
-          <p className="mt-2 text-gray-600">
-            Find and connect with verified service providers
-          </p>
+        <BackButton />
+      </div>
+     
+      <div className="container bg-white rounded-2xl mx-auto px-4 py-8">
+        
+         <div className="flex flex-col gap-4 mb-8">
+          
+          <div>
+        
+            <h1 className="text-3xl font-bold text-gray-900">Browse Providers</h1>
+            <p className="mt-2 text-gray-600">
+              Find and connect with verified service providers
+            </p>
+          </div>
         </div>
 
         {/* Filters */}
@@ -137,37 +147,38 @@ const ProvidersList = () => {
         {/* Providers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProviders.map((provider) => (
-            <Card key={provider.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{provider.companyName}</CardTitle>
-                    <CardDescription>{provider.serviceType}</CardDescription>
-                  </div>
+            <Card key={provider.id} className="bg-gray-200 rounded-2xl shadow-md p-6 flex flex-col justify-between min-h-[260px] transition hover:shadow-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-semibold text-lg">{provider.companyName}</div>
                   {provider.isVerified && (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                       Verified
-                    </Badge>
+                  </span>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
+              <div className="text-gray-500 text-sm mb-1">{provider.serviceType}</div>
+              <div className="flex gap-2 mb-3">
+                <span className="px-3 py-1 rounded-full bg-gray-500 text-white text-xs capitalize font-semibold shadow-sm border border-gray-200">
+                  {provider.serviceType}
+                </span>
+              </div>
+              <div className="text-gray-600 text-sm mb-1">
                     <span className="font-medium">Location:</span> {provider.address}
-                  </p>
-                  <p className="text-sm text-gray-600">
+              </div>
+              <div className="text-gray-600 text-sm mb-1">
                     <span className="font-medium">Contact:</span> {provider.mobileNumber}
-                  </p>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full mt-4"
+              <div className="flex items-center justify-between mt-4 gap-2">
+                <div className="font-bold text-base">{provider.serviceType}</div>
+                <div className="flex gap-2">
+                  <button
+                    className="rounded-lg px-4 py-2 bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 transition"
                   onClick={() => handleProviderClick(provider.id)}
                 >
                   View Details
-                </Button>
-              </CardContent>
+                  </button>
+                </div>
+              </div>
             </Card>
           ))}
         </div>
