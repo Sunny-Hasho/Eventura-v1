@@ -54,11 +54,7 @@ const sidebarCategories: SidebarCategory[] = [
         icon: Users,
         href: "/admin/users",
       },
-      {
-        title: "Providers",
-        icon: Building2,
-        href: "/admin/providers",
-      },
+     
       {
         title: "Verification",
         icon: Shield,
@@ -74,11 +70,7 @@ const sidebarCategories: SidebarCategory[] = [
         icon: ClipboardList,
         href: "/admin/requests",
       },
-      {
-        title: "Packages",
-        icon: Package,
-        href: "/admin/packages",
-      },
+    
       {
         title: "Calendar",
         icon: Calendar,
@@ -86,31 +78,8 @@ const sidebarCategories: SidebarCategory[] = [
       },
     ],
   },
-  {
-    title: "Communication",
-    items: [
-      {
-        title: "Messages",
-        icon: MessageSquare,
-        href: "/admin/messages",
-      },
-      {
-        title: "Reports",
-        icon: FileText,
-        href: "/admin/reports",
-      },
-    ],
-  },
-  {
-    title: "Analytics",
-    items: [
-      {
-        title: "Statistics",
-        icon: BarChart3,
-        href: "/admin/analytics",
-      },
-    ],
-  },
+ 
+ 
 ];
 
 export function AdminSidebar({ isCollapsed, onCollapse }: SidebarProps) {
@@ -172,28 +141,8 @@ export function AdminSidebar({ isCollapsed, onCollapse }: SidebarProps) {
         </nav>
 
         <div className="border-t p-2">
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-2"
-            )}
-            onClick={() => navigate("/admin/settings")}
-          >
-            <Settings className="h-5 w-5" />
-            {!isCollapsed && <span className="ml-2">Settings</span>}
-          </Button>
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start",
-              isCollapsed && "justify-center px-2"
-            )}
-            onClick={() => navigate("/admin/support")}
-          >
-            <HelpCircle className="h-5 w-5" />
-            {!isCollapsed && <span className="ml-2">Support</span>}
-          </Button>
+        
+       
           <Button
             variant="ghost"
             className={cn(
