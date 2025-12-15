@@ -18,6 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.example.eventura.dto.request.VerifyOtpRequest;
+import java.time.LocalDateTime;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +34,34 @@ public class UserService {
     private final EmailService emailService;
 
     public UserResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()) != null) {
-            throw new ResourceConflictException("Email already exists");
+        User existingUser = userRepository.findByEmail(request.getEmail());
+        
+        if (existingUser != null) {
+            if (existingUser.isEmailVerified()) {
+                throw new ResourceConflictException("Email already exists");
+            }
+            // If user exists but NOT verified, we treat it as a re-register/retry
+            // Update details and resend OTP
+            existingUser.setFirstName(request.getFirstName());
+            existingUser.setLastName(request.getLastName());
+            existingUser.setMobileNumber(request.getMobileNumber());
+            existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            existingUser.setRole(request.getRole());
+            // Reset OTP
+            String otp = String.format("%06d", new Random().nextInt(999999));
+            existingUser.setOtp(otp);
+            existingUser.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+            
+            User savedUser = userRepository.save(existingUser);
+            
+            // Resend OTP email
+            try {
+                emailService.sendOtpEmail(savedUser.getEmail(), "Verify your Account", savedUser.getFirstName(), otp);
+            } catch (MessagingException e) {
+                logger.error("Failed to resend OTP email to {}: {}", savedUser.getEmail(), e.getMessage());
+            }
+            
+            return convertToResponse(savedUser);
         }
 
         User user = new User();
@@ -43,28 +72,81 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
         user.setAccountStatus(User.AccountStatus.ACTIVE);
+        
+        // Generate OTP for immediate verification/login after registration
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 
         User savedUser = userRepository.save(user);
 
-        // Send welcome email using Thymeleaf template
-        String subject = "Welcome to Eventura!";
+        // Send OTP email
         try {
-            emailService.sendWelcomeEmail(savedUser.getEmail(), subject, savedUser.getFirstName(), savedUser.getLastName());
+            emailService.sendOtpEmail(savedUser.getEmail(), "Verify your Account", savedUser.getFirstName(), otp);
         } catch (MessagingException e) {
-            logger.error("Failed to send welcome email to {}: {}", savedUser.getEmail(), e.getMessage());
-            // Continue registration despite email failure
+            logger.error("Failed to send OTP email during registration to {}: {}", savedUser.getEmail(), e.getMessage());
+            // We still return success for registration, user will just have to resend/login or contact support if they didn't get it.
+            // Or maybe throw? For now, log is fine.
         }
 
         return convertToResponse(savedUser);
     }
 
-    public String login(LoginRequest request) {
+    public String initiateLogin(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail());
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new UnauthorizedException("Invalid email or password");
         }
 
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5)); // Valid for 5 minutes
+        userRepository.save(user);
+
+        // Send OTP via email
+        try {
+            emailService.sendOtpEmail(user.getEmail(), "Your OTP Code", user.getFirstName(), otp);
+        } catch (MessagingException e) {
+            logger.error("Failed to send OTP email to {}: {}", user.getEmail(), e.getMessage());
+            throw new RuntimeException("Failed to send OTP. Please try again later.");
+        }
+
+        return "OTP_SENT";
+    }
+
+    public String verifyOtp(VerifyOtpRequest request) {
+        User user = userRepository.findByEmail(request.getEmail());
+        if (user == null) {
+            throw new UnauthorizedException("User not found");
+        }
+
+        if (user.getOtp() == null || user.getOtpExpiry() == null) {
+            throw new UnauthorizedException("No OTP was requested");
+        }
+
+        if (LocalDateTime.now().isAfter(user.getOtpExpiry())) {
+            throw new UnauthorizedException("OTP has expired");
+        }
+
+        if (!user.getOtp().equals(request.getOtp())) {
+            throw new UnauthorizedException("Invalid OTP");
+        }
+
+        // Clear OTP after successful verification
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
         return jwtTokenProvider.generateToken(user);
+    }
+    
+    // Kept for backward compatibility if needed, or redirecting to new flow
+    // But since we are changing the flow, let's rename the original to match the controller call if we didn't change controller yet.
+    // Ideally update controller to call initiateLogin.
+    public String login(LoginRequest request) {
+        return initiateLogin(request);
     }
 
     public UserResponse updateAccountStatus(Long userId, String status) {

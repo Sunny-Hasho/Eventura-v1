@@ -43,10 +43,19 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @Column(name = "otp")
+    private String otp;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
     @PreUpdate
     public void setUpdatedAt() {
         this.updatedAt = LocalDateTime.now();
     }
+    
+    @Column(name = "is_email_verified", nullable = false)
+    private boolean isEmailVerified = false;
 
     public enum Role {
         CLIENT, PROVIDER, ADMIN

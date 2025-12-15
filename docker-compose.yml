@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  mysqldb:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: EVENTURA
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: ./full_eventura_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      # Override the URL to point to the 'mysqldb' service name inside the network
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/EVENTURA?createDatabaseIfNotExist=true
+      # Provide a secure default for Docker (though in real prod this would be an env var referencing a secret)
+      JWT_SECRET: ProducedSecretKeyForDockerContainerRunningEventuraBackendOnlySuperSecure
+      MAIL_USERNAME: sanixu.hasho@gmail.com
+      MAIL_PASSWORD: "irhk ltjd mahj jyav"
+    depends_on:
+      - mysqldb
+
+volumes:
+  mysql_data:
