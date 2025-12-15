@@ -48,13 +48,41 @@ export const authService = {
         throw new Error("Login failed");
       }
 
+      // Backend now returns "OTP_SENT" string instead of JWT for first step
+      const result = await response.text();
+      return result;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Login failed");
+    }
+  },
+
+  async verifyOtp(email: string, otp: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/verify-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      if (!response.ok) {
+         if (response.status === 401) {
+           throw new Error("Invalid OTP");
+         }
+         throw new Error("OTP verification failed");
+      }
+
       const token = await response.text();
       return token;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error("Login failed");
+      throw new Error("OTP verification failed");
     }
   },
 

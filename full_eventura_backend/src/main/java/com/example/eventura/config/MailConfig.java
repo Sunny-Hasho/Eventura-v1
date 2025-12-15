@@ -1,5 +1,6 @@
 package com.example.eventura.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -10,15 +11,25 @@ import java.util.Properties;
 @Configuration
 public class MailConfig {
 
-    private static final String SMTP_USERNAME = "sanixu.hasho@gmail.com";
+    @Value("${spring.mail.host}")
+    private String host;
+
+    @Value("${spring.mail.port}")
+    private int port;
+
+    @Value("${spring.mail.username}")
+    private String username;
+
+    @Value("${spring.mail.password}")
+    private String password;
 
     @Bean
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
-        mailSender.setUsername(SMTP_USERNAME);
-        mailSender.setPassword("irhk ltjd mahj jyav");
+        mailSender.setHost(host);
+        mailSender.setPort(port);
+        mailSender.setUsername(username);
+        mailSender.setPassword(password);
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.smtp.auth", "true");
@@ -33,6 +44,6 @@ public class MailConfig {
 
     @Bean
     public String mailSenderUsername() {
-        return SMTP_USERNAME;
+        return username;
     }
 }

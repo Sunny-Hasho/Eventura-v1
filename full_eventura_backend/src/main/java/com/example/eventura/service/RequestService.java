@@ -17,11 +17,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RequestService {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RequestService.class);
+
     private final ServiceRequestRepository serviceRequestRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService; // Add NotificationService dependency
 
+    // ... (existing methods until updateRequestStatus)
+
     public ServiceRequestResponse createRequest(Long clientId, ServiceRequestRequest request) {
+        // ... (body of createRequest)
         User client = userRepository.findById(clientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
@@ -44,6 +49,12 @@ public class RequestService {
 
         return convertToResponse(savedRequest);
     }
+    
+    // ... (re-implementing skipped methods to ensure correct context match or just targeted replace)
+    // Actually, I should just target the specific lines if possible or the top of class + specific method.
+    // MultiReplaceFileContent is better here.
+
+
 
     public ServiceRequestResponse getRequest(Long requestId) {
         ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
@@ -177,7 +188,7 @@ public class RequestService {
         }
         // Remove all non-alphabetic characters and convert to uppercase
         String normalizedStatus = status.replaceAll("[^a-zA-Z]", "").toUpperCase();
-        System.out.println("Raw status: [" + status + "], Normalized status: [" + normalizedStatus + "]");
+        logger.info("Raw status: [{}], Normalized status: [{}]", status, normalizedStatus);
 
         // Enforce state transitions
         String currentStatus = serviceRequest.getStatus().name();

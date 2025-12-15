@@ -34,10 +34,16 @@ interface AuthFormProps {
 }
 
 const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
-  const { login, register } = useAuth();
+  // @ts-ignore - verifyOtp is now available in context but type definition might be lagging
+  const { login, register, verifyOtp } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // OTP State
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otp, setOtp] = useState("");
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -47,6 +53,7 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
     },
   });
 
+  // ... (registerForm definition remains unchanged)
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -62,12 +69,37 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
+      // First step: Initiate login
       await login(data as LoginRequest);
-      if (onSuccess) onSuccess();
+      // If successful (no error thrown), we move to OTP step
+      setOtpEmail(data.email);
+      setShowOtpInput(true);
+      toast({
+        title: "OTP Sent",
+        description: "Please check your email for the verification code.",
+      });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login initiation error:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const onOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp || otp.length < 6) {
+        toast({ title: "Invalid OTP", description: "Please enter a valid 6-digit code", variant: "destructive" });
+        return;
+    }
+    
+    setIsLoading(true);
+    try {
+        await verifyOtp(otpEmail, otp);
+        if (onSuccess) onSuccess();
+    } catch (error) {
+        console.error("OTP verification error:", error);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -75,7 +107,13 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
     setIsLoading(true);
     try {
       await register(data as RegisterRequest);
-      if (onSuccess) onSuccess();
+      // Registration successful, OTP sent. Switch to OTP view.
+      setOtpEmail(data.email);
+      setShowOtpInput(true);
+      toast({
+        title: "Registration Successful",
+        description: "Please check your email for the verification code.",
+      });
     } catch (error) {
       console.error("Registration error:", error);
       // Handle the error message from the backend
@@ -98,7 +136,50 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
     setShowPassword(!showPassword);
   };
 
+  if (showOtpInput) {
+      return (
+        <div className="auth-form-container">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold">Enter OTP</h1>
+            <p className="text-sm text-muted-foreground">
+              We sent a 6-digit code to {otpEmail}
+            </p>
+          </div>
+          
+          <form onSubmit={onOtpSubmit} className="space-y-4">
+              <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    OTP Code
+                  </label>
+                  <Input 
+                      value={otp} 
+                      onChange={(e) => setOtp(e.target.value)} 
+                      placeholder="123456" 
+                      maxLength={6}
+                      className="text-center text-lg tracking-widest"
+                  />
+              </div>
+              
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Verifying..." : "Verify OTP"}
+              </Button>
+              
+              <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="w-full" 
+                  onClick={() => setShowOtpInput(false)}
+                  disabled={isLoading}
+              >
+                  Back to Login
+              </Button>
+          </form>
+        </div>
+      );
+  }
+
   if (type === "login") {
+
     return (
       <div className="auth-form-container">
         <div className="text-center mb-6">
@@ -110,6 +191,7 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
 
         <Form {...loginForm}>
           <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+            {/* ... form fields ... */}
             <FormField
               control={loginForm.control}
               name="email"

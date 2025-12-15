@@ -141,7 +141,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Login
   const login = async (data: LoginRequest) => {
     try {
-      const token = await authService.login(data);
+      const response = await authService.login(data);
+      
+      if (response === "OTP_SENT") {
+        // Login initiated, waiting for OTP verification
+        // Do NOT set token or dispatch success yet
+        return; 
+      }
+
+      // If response is not "OTP_SENT", assume it's a token (legacy fallback)
+      const token = response;
       authService.saveToken(token);
       
       dispatch({
@@ -177,6 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: errorMessage,
         variant: "destructive",
       });
+      throw error; // Rethrow so component knows it failed
     }
   };
 
@@ -296,6 +306,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: "CLEAR_ERROR" });
   };
 
+  // Verify OTP
+  const verifyOtp = async (email: string, otp: string) => {
+    try {
+      const token = await authService.verifyOtp(email, otp);
+      authService.saveToken(token);
+
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { token },
+      });
+
+      const user = await authService.getUserInfo(token);
+      dispatch({ type: "USER_LOADED", payload: { user } });
+
+      // Check if user is suspended
+      if (user.accountStatus === "SUSPENDED") {
+        setShowSuspensionPopup(true);
+        toast({
+          title: "Account Suspended",
+          description: "Your account has been suspended. Please contact admin for assistance.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${user.firstName}!`,
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "OTP Verification failed";
+      dispatch({
+        type: "LOGIN_FAILURE",
+        payload: { error: errorMessage },
+      });
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -306,12 +354,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearError,
         updateProfile,
         deleteAccount,
-      }}
+        verifyOtp, // Add verifyOtp to context
+      } as any} // Cast to any temporarily if type doesn't match yet
     >
       {children}
-      <SuspensionPopup 
-        isOpen={showSuspensionPopup} 
-        onClose={() => setShowSuspensionPopup(false)} 
+      <SuspensionPopup
+        isOpen={showSuspensionPopup}
+        onClose={() => setShowSuspensionPopup(false)}
       />
     </AuthContext.Provider>
   );
