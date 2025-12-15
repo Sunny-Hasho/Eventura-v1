@@ -26,10 +26,16 @@ public class UserController {
         return new ResponseEntity<>(userService.register(request), HttpStatus.CREATED);
     }
 
-    //User Login
+    //User Login (Initiate)
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(userService.login(request));
+        return ResponseEntity.ok(userService.initiateLogin(request));
+    }
+
+    //Verify OTP
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtp(@RequestBody com.example.eventura.dto.request.VerifyOtpRequest request) {
+        return ResponseEntity.ok(userService.verifyOtp(request));
     }
 
     //Set Status

@@ -1,7 +1,6 @@
 package com.example.eventura.service;
 
 import com.example.eventura.dto.request.PaymentRequest;
-import com.example.eventura.dto.request.PaymentStatusRequest;
 import com.example.eventura.dto.response.PaymentResponse;
 import com.example.eventura.entity.Payment;
 import com.example.eventura.entity.ServiceRequest;
@@ -15,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import jakarta.mail.MessagingException;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +23,8 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final NotificationService notificationService;
-    private final EmailService emailService;
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PaymentService.class);
 
     public PaymentResponse createPayment(PaymentRequest request, String email) {
         User client = userRepository.findByEmail(email);
@@ -98,7 +97,7 @@ public class PaymentService {
             throw new ResourceNotFoundException("User not found");
         }
 
-        System.out.println("payment updated status  huu");
+        logger.info("Payment updated status: {}", status);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
 
@@ -114,19 +113,16 @@ public class PaymentService {
             User client = payment.getClient();
             ServiceRequest request = payment.getRequest();
 
-            System.out.println("completee meessssaaggeeee");
+            logger.info("Processing completion messages for payment {}", paymentId);
             // Notify provider
             String providerMessage = String.format("You received a payment of Rs %s for service request: %s from %s %s",
                     payment.getAmount(), request.getTitle(), client.getFirstName(), client.getLastName());
             notificationService.createNotification(provider, providerMessage);
 
-
-
             // Notify client
             String clientMessage = String.format("Your payment of Rs %s for service request: %s was successful",
                     payment.getAmount(), request.getTitle());
             notificationService.createNotification(client, clientMessage);
-
         }
 
         return convertToResponse(updatedPayment);

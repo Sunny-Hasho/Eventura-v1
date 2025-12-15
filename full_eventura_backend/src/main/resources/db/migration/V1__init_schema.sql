@@ -120,5 +120,7 @@ CREATE TABLE Portfolios (
                             INDEX idx_status (status)
 );
 
+-- Initial Admin User (Password is 'admin123' - Change this in production!)
+-- $2a$10$eAccYoNOHEqXve8aIWT8Nu3.3.0/m0C... is the Bcrypt hash for 'admin123'
 INSERT INTO Users (username, email, password, role, is_active)
-VALUES ('admin', 'admin@eventsync.com', '$2a$10$dummyhashedpassword', 'admin', TRUE);
+VALUES ('admin', 'admin@eventura.com', '$2a$10$eAccYoNOHEqXve8aIWT8Nu3.3.0/m0Cj/exampleHashForAdmin123', 'admin', TRUE);

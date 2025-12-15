@@ -200,4 +200,35 @@ public class EmailService {
         logger.debug("Sent profile update email to {} with subject: {}", to, subject);
     }
 
+    public void sendOtpEmail(String to, String subject, String firstName, String otp) throws MessagingException {
+        Context context = new Context();
+        context.setVariable("firstName", firstName);
+        context.setVariable("otp", otp);
+        context.setVariable("appUrl", appUrl);
+        context.setVariable("supportEmail", supportEmail);
+
+        // We can reuse a simple template or create a new one.
+        // For now, let's assume we create 'otp-email.html', or fallback to a simple one.
+        // But since we are editing java, let's stick to using the templateEngine.
+        String body = templateEngine.process("otp-email", context);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(mailSenderUsername);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(body, true);
+
+        try {
+            ClassPathResource logoImage = new ClassPathResource("static/images/logo2.png");
+            helper.addInline("logo2", logoImage);
+        } catch (Exception e) {
+             // ignore
+        }
+
+        mailSender.send(message);
+        logger.debug("Sent OTP email to {}", to);
+    }
+
 }
