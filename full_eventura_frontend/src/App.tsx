@@ -10,6 +10,7 @@ import RouteGuard from "./components/RouteGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import RoleSelectionPage from "./pages/RoleSelectionPage";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import ProviderProfile from "./pages/ProviderProfile";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/join" element={<RoleSelectionPage />} />
 
             {/* Admin routes */}
             <Route path="/admin" element={

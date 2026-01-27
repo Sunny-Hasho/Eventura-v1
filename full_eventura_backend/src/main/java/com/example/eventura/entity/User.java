@@ -17,13 +17,13 @@ public class User {
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name")
     private String lastName;
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "mobile_number",  nullable = false)
+    @Column(name = "mobile_number")
     private String mobileNumber;
 
     @Column(nullable = false)
