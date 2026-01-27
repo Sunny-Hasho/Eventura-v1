@@ -1,32 +1,65 @@
 version: '3.8'
+
 services:
+  # MySQL Database
   mysqldb:
     image: mysql:8.0
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: EVENTURA
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
 
+  # Spring Boot Backend
   backend:
     build: ./full_eventura_backend
     restart: always
     ports:
       - "8080:8080"
     environment:
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      # Override the URL to point to the 'mysqldb' service name inside the network
+      # Database
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
       SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/EVENTURA?createDatabaseIfNotExist=true
-      # Provide a secure default for Docker (though in real prod this would be an env var referencing a secret)
-      JWT_SECRET: ProducedSecretKeyForDockerContainerRunningEventuraBackendOnlySuperSecure
-      MAIL_USERNAME: sanixu.hasho@gmail.com
-      MAIL_PASSWORD: "irhk ltjd mahj jyav"
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-DefaultDevSecretKeyChangeInProduction}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      
+      # Email
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      
+      # CORS - Frontend URL
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:80}
     depends_on:
-      - mysqldb
+      mysqldb:
+        condition: service_healthy
+
+  # React Frontend (nginx)
+  frontend:
+    build:
+      context: ./full_eventura_frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   mysql_data:

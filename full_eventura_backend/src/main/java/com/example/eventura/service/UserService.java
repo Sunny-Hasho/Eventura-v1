@@ -32,6 +32,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+    private final GoogleAuthService googleAuthService;
 
     public UserResponse register(RegisterRequest request) {
         User existingUser = userRepository.findByEmail(request.getEmail());
@@ -212,8 +213,8 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Authorization check: Only the user themselves or an admin can access
-        User requestingUser = userRepository.findById(requestingUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Requesting user not found"));
+        // User requestingUser = userRepository.findById(requestingUserId)
+        //         .orElseThrow(() -> new ResourceNotFoundException("Requesting user not found"));
 
 //        if (!userId.equals(requestingUserId) && !requestingUser.getRole().equals(User.Role.ADMIN)) {
 //            throw new UnauthorizedException("Not authorized to access this user's information");
@@ -273,6 +274,66 @@ public class UserService {
     }
 
 
+
+    /**
+     * Google Login - For EXISTING users only.
+     * Throws ResourceNotFoundException if user doesn't exist (they need to sign up first).
+     */
+    public String processGoogleLogin(String idTokenString) {
+        try {
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload = googleAuthService.verifyToken(idTokenString);
+            String email = payload.getEmail();
+            
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                throw new ResourceNotFoundException("No account found with this email. Please sign up first.");
+            }
+            
+            return jwtTokenProvider.generateToken(user);
+        } catch (ResourceNotFoundException e) {
+            throw e; // Re-throw ResourceNotFoundException as-is
+        } catch (Exception e) {
+            logger.error("Google Login Failed", e);
+            throw new UnauthorizedException("Invalid Google Token");
+        }
+    }
+
+    /**
+     * Google Sign Up - For NEW users only.
+     * Creates a new account with the specified role.
+     * Throws ResourceConflictException if user already exists.
+     */
+    public String processGoogleSignUp(String idTokenString, String role) {
+        try {
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload = googleAuthService.verifyToken(idTokenString);
+            String email = payload.getEmail();
+            
+            User existingUser = userRepository.findByEmail(email);
+            if (existingUser != null) {
+                throw new ResourceConflictException("An account with this email already exists. Please log in instead.");
+            }
+            
+            // Create new user with specified role
+            User user = new User();
+            user.setEmail(email);
+            user.setFirstName((String) payload.get("given_name"));
+            user.setLastName((String) payload.get("family_name"));
+            user.setRole(User.Role.valueOf(role.toUpperCase()));
+            user.setAccountStatus(User.AccountStatus.ACTIVE);
+            user.setEmailVerified(true);
+            // Random password since they login with Google
+            user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            
+            userRepository.save(user);
+            
+            return jwtTokenProvider.generateToken(user);
+        } catch (ResourceConflictException e) {
+            throw e; // Re-throw ResourceConflictException as-is
+        } catch (Exception e) {
+            logger.error("Google Sign Up Failed", e);
+            throw new UnauthorizedException("Invalid Google Token");
+        }
+    }
 
     private UserResponse convertToResponse(User user) {
         UserResponse response = new UserResponse();

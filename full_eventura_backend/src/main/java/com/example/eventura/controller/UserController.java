@@ -32,6 +32,19 @@ public class UserController {
         return ResponseEntity.ok(userService.initiateLogin(request));
     }
 
+    // Google Login (existing users only)
+    @PostMapping("/google/login")
+    public ResponseEntity<String> googleLogin(@RequestBody java.util.Map<String, String> payload) {
+        String token = payload.get("token");
+        return ResponseEntity.ok(userService.processGoogleLogin(token));
+    }
+
+    // Google Sign Up (new users with role)
+    @PostMapping("/google/signup")
+    public ResponseEntity<String> googleSignUp(@RequestBody com.example.eventura.dto.request.GoogleSignUpRequest request) {
+        return ResponseEntity.ok(userService.processGoogleSignUp(request.getToken(), request.getRole()));
+    }
+
     //Verify OTP
     @PostMapping("/verify-otp")
     public ResponseEntity<String> verifyOtp(@RequestBody com.example.eventura.dto.request.VerifyOtpRequest request) {
