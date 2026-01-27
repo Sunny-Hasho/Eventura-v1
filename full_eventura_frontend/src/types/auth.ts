@@ -27,6 +27,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface GoogleSignUpRequest {
+  token: string;
+  role: UserRole;
+}
+
 export interface UpdateUserRequest {
   firstName: string;
   lastName: string;
@@ -51,4 +56,8 @@ export interface AuthContextType {
   clearError: () => void;
   updateProfile: (data: UpdateUserRequest) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
+  googleLogin: (token: string) => Promise<void>;
+  googleSignUp: (token: string, role: UserRole) => Promise<void>;
 }
+

@@ -10,6 +10,8 @@ import RoleSelector from "./RoleSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
+import GoogleLoginButton from "./GoogleLoginButton";
+import GoogleSignUpButton from "./GoogleSignUpButton";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -31,9 +33,10 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 interface AuthFormProps {
   type: "login" | "register";
   onSuccess?: () => void;
+  preSelectedRole?: UserRole | null;
 }
 
-const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
+const AuthForm = ({ type, onSuccess, preSelectedRole }: AuthFormProps) => {
   // @ts-ignore - verifyOtp is now available in context but type definition might be lagging
   const { login, register, verifyOtp } = useAuth();
   const { toast } = useToast();
@@ -62,7 +65,7 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
       email: "",
       mobileNumber: "",
       password: "",
-      role: "CLIENT",
+      role: preSelectedRole || "CLIENT",
     },
   });
 
@@ -256,6 +259,19 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <GoogleLoginButton />
           </form>
         </Form>
 
@@ -277,6 +293,24 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
           Join Eventura to connect with event professionals
         </p>
       </div>
+
+      {/* Google Sign Up at TOP (Upwork style) */}
+      {preSelectedRole && (
+        <>
+          <GoogleSignUpButton role={preSelectedRole} />
+          
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">
+                or sign up with email
+              </span>
+            </div>
+          </div>
+        </>
+      )}
 
       <Form {...registerForm}>
         <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
@@ -377,21 +411,24 @@ const AuthForm = ({ type, onSuccess }: AuthFormProps) => {
             )}
           />
 
-          <FormField
-            control={registerForm.control}
-            name="role"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <RoleSelector
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Only show RoleSelector if no pre-selected role */}
+          {!preSelectedRole && (
+            <FormField
+              control={registerForm.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <RoleSelector
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <div className="pt-2">
             <Button type="submit" className="w-full" disabled={isLoading}>

@@ -344,6 +344,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Google Login (existing users only)
+  const googleLogin = async (token: string) => {
+    try {
+      const jwtToken = await authService.googleLogin(token);
+      authService.saveToken(jwtToken);
+      
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { token: jwtToken },
+      });
+
+      const user = await authService.getUserInfo(jwtToken);
+      dispatch({ type: "USER_LOADED", payload: { user } });
+
+      if (user.accountStatus === "SUSPENDED") {
+        setShowSuspensionPopup(true);
+        toast({
+          title: "Account Suspended",
+          description: "Your account has been suspended. Please contact admin for assistance.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${user.firstName}!`,
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Google Login failed";
+      dispatch({
+        type: "LOGIN_FAILURE",
+        payload: { error: errorMessage },
+      });
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Google Sign Up (new users with role)
+  const googleSignUp = async (token: string, role: string) => {
+    try {
+      const jwtToken = await authService.googleSignUp(token, role);
+      authService.saveToken(jwtToken);
+      
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { token: jwtToken },
+      });
+
+      const user = await authService.getUserInfo(jwtToken);
+      dispatch({ type: "USER_LOADED", payload: { user } });
+
+      toast({
+        title: "Account created successfully",
+        description: `Welcome to Eventura, ${user.firstName}!`,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Google Sign Up failed";
+      dispatch({
+        type: "REGISTER_FAILURE",
+        payload: { error: errorMessage },
+      });
+      toast({
+        title: "Sign up failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -354,8 +429,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearError,
         updateProfile,
         deleteAccount,
-        verifyOtp, // Add verifyOtp to context
-      } as any} // Cast to any temporarily if type doesn't match yet
+        verifyOtp,
+        googleLogin,
+        googleSignUp,
+      }}
     >
       {children}
       <SuspensionPopup

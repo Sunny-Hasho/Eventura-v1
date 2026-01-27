@@ -1,6 +1,6 @@
 import { LoginRequest, RegisterRequest, UpdateUserRequest, User } from "@/types/auth";
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api`;
 
 export const authService = {
   async register(data: RegisterRequest): Promise<User> {
@@ -56,6 +56,60 @@ export const authService = {
         throw error;
       }
       throw new Error("Login failed");
+    }
+  },
+
+  async googleLogin(token: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/google/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("No account found. Please sign up first.");
+        }
+        throw new Error("Google Login failed");
+      }
+
+      const jwtToken = await response.text();
+      return jwtToken;
+    } catch (error) {
+       if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Google Login failed");
+    }
+  },
+
+  async googleSignUp(token: string, role: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/google/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token, role }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error("Account already exists. Please log in instead.");
+        }
+        throw new Error("Google Sign Up failed");
+      }
+
+      const jwtToken = await response.text();
+      return jwtToken;
+    } catch (error) {
+       if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Google Sign Up failed");
     }
   },
 
