@@ -23,6 +23,14 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    labels:
+      # Traefik CORS middleware
+      - "traefik.http.middlewares.backend-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,DELETE,PATCH"
+      - "traefik.http.middlewares.backend-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.backend-cors.headers.accesscontrolalloworiginlist=${CORS_ALLOWED_ORIGINS:-https://eventura.oxzaa.com}"
+      - "traefik.http.middlewares.backend-cors.headers.accesscontrolmaxage=3600"
+      - "traefik.http.middlewares.backend-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.backend-cors.headers.addvaryheader=true"
     environment:
       # Database
       DB_USERNAME: ${DB_USERNAME:-root}
