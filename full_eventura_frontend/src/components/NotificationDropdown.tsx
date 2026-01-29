@@ -34,7 +34,7 @@ const NotificationDropdown = () => {
     queryKey: ['notifications'],
     queryFn: () => notificationService.getAllNotifications(),
     enabled: isAuthenticated,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    // WebSocket handles real-time updates - no polling needed
   });
 
   // Fetch unread count separately
@@ -42,7 +42,7 @@ const NotificationDropdown = () => {
     queryKey: ['unreadCount'],
     queryFn: () => notificationService.getUnreadCount(),
     enabled: isAuthenticated,
-    refetchInterval: 30000,
+    // WebSocket handles real-time updates - no polling needed
   });
 
   const handleNotificationClick = async (notification: NotificationResponse) => {

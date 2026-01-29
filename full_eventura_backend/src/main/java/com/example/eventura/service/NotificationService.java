@@ -18,6 +18,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final WebSocketEventService webSocketEventService;
 
     public NotificationResponse createNotification(User user, String message) {
         Notification notification = new Notification();
@@ -26,7 +27,12 @@ public class NotificationService {
         notification.setIsRead(false);
 
         Notification savedNotification = notificationRepository.save(notification);
-        return convertToResponse(savedNotification);
+        NotificationResponse response = convertToResponse(savedNotification);
+        
+        // Broadcast notification to user via WebSocket
+        webSocketEventService.sendNotificationToUser(user.getEmail(), response);
+        
+        return response;
     }
 
     public Page<NotificationResponse> getNotificationsByUser(String email, Pageable pageable, Boolean isRead) {
