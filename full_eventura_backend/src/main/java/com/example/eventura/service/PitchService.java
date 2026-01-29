@@ -23,6 +23,7 @@ public class PitchService {
     private final UserRepository userRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final NotificationService notificationService;
+    private final WebSocketEventService webSocketEventService;
 
     public PitchResponse createPitch(Long providerId, PitchRequest request) {
         User provider = userRepository.findById(providerId)
@@ -49,6 +50,9 @@ public class PitchService {
         String message = String.format("New pitch from %s %s for your service request: %s",
                 provider.getFirstName(), provider.getLastName(), serviceRequest.getTitle());
         notificationService.createNotification(client, message);
+
+        // Broadcast pitch creation for dashboard auto-update
+        webSocketEventService.broadcastPitchChange("CREATED");
 
         return convertToResponse(savedPitch);
     }

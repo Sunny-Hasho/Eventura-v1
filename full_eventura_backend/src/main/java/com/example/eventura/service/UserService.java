@@ -33,6 +33,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
     private final GoogleAuthService googleAuthService;
+    private final WebSocketEventService webSocketEventService;
 
     public UserResponse register(RegisterRequest request) {
         User existingUser = userRepository.findByEmail(request.getEmail());
@@ -80,6 +81,9 @@ public class UserService {
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 
         User savedUser = userRepository.save(user);
+        
+        // Broadcast user change for dashboard auto-update
+        webSocketEventService.broadcastUserChange("CREATED");
 
         // Send OTP email
         try {
@@ -325,6 +329,9 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
             
             userRepository.save(user);
+            
+            // Broadcast user change for dashboard auto-update
+            webSocketEventService.broadcastUserChange("CREATED");
             
             return jwtTokenProvider.generateToken(user);
         } catch (ResourceConflictException e) {

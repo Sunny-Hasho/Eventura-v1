@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteGuard from "./components/RouteGuard";
+import WebSocketProvider from "./components/WebSocketProvider";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -35,9 +36,8 @@ import RequestCalendarPage from "./pages/admin/RequestCalendarPage";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchInterval: 5000, // Refetch every 5 seconds
-      refetchIntervalInBackground: true, // Continue refetching even when tab is not active
-      staleTime: 0, // Consider data stale immediately
+      // Removed polling - WebSocket handles real-time updates
+      staleTime: 30000, // Data stays fresh for 30 seconds
       retry: 1, // Only retry failed requests once
     },
   },
@@ -46,11 +46,12 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+      <WebSocketProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -199,6 +200,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+    </WebSocketProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -30,6 +30,7 @@ public class ProviderService {
     private final VerificationDocumentRepository verificationDocumentRepository;
     private final PortfolioRepository portfolioRepository;
     private final NotificationService notificationService;
+    private final WebSocketEventService webSocketEventService;
 
     public ProviderResponse createProviderProfile(Long userId, ProviderProfileRequest request) {
         User user = userRepository.findById(userId)
@@ -53,6 +54,9 @@ public class ProviderService {
         provider.setIsVerified(false);
 
         ServiceProvider savedProvider = serviceProviderRepository.save(provider);
+
+        // Broadcast provider creation for dashboard auto-update
+        webSocketEventService.broadcastProviderChange("CREATED");
 
         return convertToResponse(savedProvider);
     }
@@ -248,6 +252,9 @@ public class ProviderService {
         if (allApproved && !provider.getIsVerified()) {
             provider.setIsVerified(true);
             serviceProviderRepository.save(provider);
+            
+            // Broadcast provider verification for dashboard auto-update
+            webSocketEventService.broadcastProviderChange("VERIFIED");
         }
     }
 

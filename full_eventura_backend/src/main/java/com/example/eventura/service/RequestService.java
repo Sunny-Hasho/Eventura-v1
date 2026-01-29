@@ -22,6 +22,7 @@ public class RequestService {
     private final ServiceRequestRepository serviceRequestRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService; // Add NotificationService dependency
+    private final WebSocketEventService webSocketEventService; // For dashboard updates
 
     // ... (existing methods until updateRequestStatus)
 
@@ -46,6 +47,9 @@ public class RequestService {
         serviceRequest.setStatus(ServiceRequest.Status.OPEN);
 
         ServiceRequest savedRequest = serviceRequestRepository.save(serviceRequest);
+
+        // Broadcast request creation for dashboard auto-update
+        webSocketEventService.broadcastRequestChange("CREATED");
 
         return convertToResponse(savedRequest);
     }
