@@ -153,11 +153,8 @@ const DashboardStats = () => {
     // Initial fetch
     fetchStats();
 
-    // Set up auto-refresh
-    const intervalId = setInterval(fetchStats, REFRESH_INTERVAL);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
+    // WebSocket handles real-time updates - no polling needed
+    // Stats will be refreshed when useWebSocket receives dashboard updates
   }, [fetchStats]);
 
   if (loading && !stats) {

@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/users/register", "/api/users/login", "/api/users/verify-otp", "/api/users/google/login", "/api/users/google/signup").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").authenticated() // Explicitly require authentication for all /api/users endpoints

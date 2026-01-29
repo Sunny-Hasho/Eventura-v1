@@ -48,9 +48,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
   useEffect(() => {
     fetchNotifications();
-    // Set up polling for new notifications every minute
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    // WebSocket handles real-time updates - no polling needed
   }, []);
 
   const handleMarkAsRead = async (notificationId: number) => {

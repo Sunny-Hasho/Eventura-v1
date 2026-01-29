@@ -23,6 +23,7 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final NotificationService notificationService;
+    private final WebSocketEventService webSocketEventService;
 
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PaymentService.class);
 
@@ -123,6 +124,9 @@ public class PaymentService {
             String clientMessage = String.format("Your payment of Rs %s for service request: %s was successful",
                     payment.getAmount(), request.getTitle());
             notificationService.createNotification(client, clientMessage);
+            
+            // Broadcast payment completion for dashboard auto-update
+            webSocketEventService.broadcastPaymentChange("COMPLETED");
         }
 
         return convertToResponse(updatedPayment);
