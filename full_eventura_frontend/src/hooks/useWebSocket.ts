@@ -3,6 +3,7 @@ import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/services/authService';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -22,12 +23,15 @@ export interface DashboardUpdate {
  */
 export const useWebSocket = () => {
   const { authState } = useAuth();
-  const { isAuthenticated, token, user } = authState;
+  const { isAuthenticated } = authState;
   const queryClient = useQueryClient();
   const clientRef = useRef<Client | null>(null);
   const isConnectedRef = useRef(false);
 
   const connect = useCallback(() => {
+    // Get token from localStorage (authState.token may be null on mount)
+    const token = authService.getToken();
+    
     if (!isAuthenticated || !token || isConnectedRef.current) {
       return;
     }
@@ -51,14 +55,14 @@ export const useWebSocket = () => {
     });
 
     client.onConnect = () => {
-      console.log('[WebSocket] Connected');
+      if (import.meta.env.DEV) console.log('[WebSocket] Connected');
       isConnectedRef.current = true;
 
       // Subscribe to user-specific notifications
       client.subscribe('/user/queue/notifications', (message: IMessage) => {
         try {
           const notification = JSON.parse(message.body);
-          console.log('[WebSocket] Received notification:', notification);
+          if (import.meta.env.DEV) console.log('[WebSocket] Received notification:', notification);
           
           // Invalidate notification queries to trigger refetch
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -72,7 +76,7 @@ export const useWebSocket = () => {
       client.subscribe('/topic/dashboard-updates', (message: IMessage) => {
         try {
           const update: DashboardUpdate = JSON.parse(message.body);
-          console.log('[WebSocket] Dashboard update:', update);
+          if (import.meta.env.DEV) console.log('[WebSocket] Dashboard update:', update);
           
           // Invalidate relevant queries based on entity type
           switch (update.entityType) {
@@ -93,10 +97,12 @@ export const useWebSocket = () => {
             case 'PITCH':
               queryClient.invalidateQueries({ queryKey: ['pitches'] });
               queryClient.invalidateQueries({ queryKey: ['requestPitches'] });
+              queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
               break;
             case 'PAYMENT':
               queryClient.invalidateQueries({ queryKey: ['payments'] });
               queryClient.invalidateQueries({ queryKey: ['earnings'] });
+              queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
               break;
           }
         } catch (e) {
@@ -106,29 +112,32 @@ export const useWebSocket = () => {
     };
 
     client.onStompError = (frame) => {
-      console.error('[WebSocket] STOMP error:', frame.headers['message']);
-      console.error('[WebSocket] Details:', frame.body);
+      if (import.meta.env.DEV) {
+        console.error('[WebSocket] STOMP error:', frame.headers['message']);
+        console.error('[WebSocket] Details:', frame.body);
+      }
     };
 
     client.onWebSocketClose = () => {
-      console.log('[WebSocket] Connection closed');
+      if (import.meta.env.DEV) console.log('[WebSocket] Connection closed');
       isConnectedRef.current = false;
     };
 
     client.activate();
     clientRef.current = client;
-  }, [isAuthenticated, token, queryClient]);
+  }, [isAuthenticated, queryClient]);
 
   const disconnect = useCallback(() => {
     if (clientRef.current) {
       clientRef.current.deactivate();
       clientRef.current = null;
       isConnectedRef.current = false;
-      console.log('[WebSocket] Disconnected');
+      if (import.meta.env.DEV) console.log('[WebSocket] Disconnected');
     }
   }, []);
 
   useEffect(() => {
+    const token = authService.getToken();
     if (isAuthenticated && token) {
       connect();
     } else {
@@ -138,7 +147,7 @@ export const useWebSocket = () => {
     return () => {
       disconnect();
     };
-  }, [isAuthenticated, token, connect, disconnect]);
+  }, [isAuthenticated, connect, disconnect]);
 
   return {
     isConnected: isConnectedRef.current,
