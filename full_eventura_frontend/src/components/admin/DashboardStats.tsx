@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { providerService } from "@/services/providerService";
 import { userService } from "@/services/userService";
@@ -74,14 +74,10 @@ const USER_ROLES: UserRole[] = ["CLIENT", "PROVIDER", "ADMIN"];
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
 const DashboardStats = () => {
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-
-  const fetchStats = useCallback(async () => {
-    try {
-      setLoading(true);
+  // Use React Query for data fetching - WebSocket will invalidate this cache
+  const { data: stats, isLoading: loading, error, dataUpdatedAt } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: async (): Promise<StatsData> => {
       // Fetch all necessary data
       const [providers, users, requests] = await Promise.all([
         providerService.getAllProviders(0, 100),
@@ -121,7 +117,7 @@ const DashboardStats = () => {
         new Date(u.createdAt) > thirtyDaysAgo
       ).length;
 
-      setStats({
+      return {
         providerStats: {
           totalProviders: providers.content.length,
           verifiedProviders,
@@ -140,22 +136,12 @@ const DashboardStats = () => {
           usersByRole,
           newUsersLast30Days,
         },
-      });
-      setLastUpdated(new Date());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch statistics");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      };
+    },
+    staleTime: 30000, // Consider data stale after 30 seconds
+  });
 
-  useEffect(() => {
-    // Initial fetch
-    fetchStats();
-
-    // WebSocket handles real-time updates - no polling needed
-    // Stats will be refreshed when useWebSocket receives dashboard updates
-  }, [fetchStats]);
+  const lastUpdated = new Date(dataUpdatedAt);
 
   if (loading && !stats) {
     return <div className="text-center py-4">Loading statistics...</div>;
@@ -164,7 +150,7 @@ const DashboardStats = () => {
   if (error && !stats) {
     return (
       <div className="text-center py-4 text-red-600">
-        Error: {error || "Failed to load statistics"}
+        Error: {error instanceof Error ? error.message : "Failed to load statistics"}
       </div>
     );
   }
