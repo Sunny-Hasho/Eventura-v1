@@ -17,9 +17,11 @@ import java.time.LocalDateTime;
 public class Pitch {
 
     public enum Status {
-        PENDING,
-        WIN,
-        LOSE
+        PENDING,    // Waiting for client decision
+        ACCEPTED,   // Client accepted, waiting for payment
+        PAID,       // Payment confirmed, work can start
+        REJECTED,   // Client chose another provider
+        WITHDRAWN   // Provider withdrew pitch
     }
 
     @Id

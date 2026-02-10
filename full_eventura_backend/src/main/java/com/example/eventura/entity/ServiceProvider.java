@@ -32,6 +32,13 @@ public class ServiceProvider {
     @Column(name = "is_verified")
     private Boolean isVerified = false;
 
+    // Stripe Connect fields for receiving payments
+    @Column(name = "stripe_account_id")
+    private String stripeAccountId;
+
+    @Column(name = "stripe_onboarding_complete")
+    private Boolean stripeOnboardingComplete = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

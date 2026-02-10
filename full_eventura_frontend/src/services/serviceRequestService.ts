@@ -306,6 +306,97 @@ class ServiceRequestService {
       throw new Error("Failed to delete request");
     }
   }
+
+  // NEW: Work phase methods for escrow flow
+  async startWork(requestId: number): Promise<ServiceRequestResponse> {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/requests/${requestId}/start-work`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) throw new Error("Not authenticated");
+        if (response.status === 403) throw new Error("Only assigned provider can start work");
+        if (response.status === 404) throw new Error("Request not found");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to start work");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error starting work:", error);
+      throw error;
+    }
+  }
+
+  async markComplete(requestId: number): Promise<ServiceRequestResponse> {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/requests/${requestId}/mark-complete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) throw new Error("Not authenticated");
+        if (response.status === 403) throw new Error("Only assigned provider can mark complete");
+        if (response.status === 404) throw new Error("Request not found");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to mark complete");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error marking complete:", error);
+      throw error;
+    }
+  }
+
+  async approveWork(requestId: number): Promise<ServiceRequestResponse> {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/requests/${requestId}/approve`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) throw new Error("Not authenticated");
+        if (response.status === 403) throw new Error("Only client can approve work");
+        if (response.status === 404) throw new Error("Request not found");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to approve work");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error approving work:", error);
+      throw error;
+    }
+  }
 }
 
 export const serviceRequestService = new ServiceRequestService(); 
