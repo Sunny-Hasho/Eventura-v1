@@ -13,4 +13,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Page<Payment> findByClient(User client, Pageable pageable);
     Page<Payment> findByProvider(User provider, Pageable pageable);
     Optional<Payment> findTopByRequestOrderByCreatedAtDesc(ServiceRequest request);
+    Optional<Payment> findByRequest(ServiceRequest request);
+    Page<Payment> findByPaymentStatus(Payment.PaymentStatus status, Pageable pageable);
 }

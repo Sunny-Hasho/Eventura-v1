@@ -41,6 +41,9 @@ public class ServiceRequest {
 
     private Double budget;
 
+    @Column(name = "assigned_price")
+    private Double assignedPrice;
+
     @Enumerated(EnumType.STRING)
     private Status status;
 
@@ -56,6 +59,12 @@ public class ServiceRequest {
     }
 
     public enum Status {
-        OPEN, ASSIGNED, COMPLETED, CANCELLED, DELETED
+        OPEN,              // Accepting pitches
+        ASSIGNED,          // Provider assigned, payment escrowed
+        IN_PROGRESS,       // Provider working on the event
+        PENDING_APPROVAL,  // Work done, awaiting client approval
+        COMPLETED,         // Done, payment released
+        CANCELLED,         // Cancelled before completion
+        DELETED            // Soft delete
     }
 }

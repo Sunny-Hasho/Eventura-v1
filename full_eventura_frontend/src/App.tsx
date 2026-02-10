@@ -32,6 +32,7 @@ import ServiceRequestsPage from "./pages/admin/ServiceRequestsPage";
 import UsersPage from "./pages/admin/UsersPage";
 import ProviderVerificationPage from "./pages/admin/ProviderVerificationPage";
 import RequestCalendarPage from "./pages/admin/RequestCalendarPage";
+import PaymentsPage from "./pages/admin/PaymentsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,13 @@ const App = () => (
               <ProtectedRoute requiredRole="ADMIN">
                 <RouteGuard>
                   <RequestCalendarPage />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/payments" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <PaymentsPage />
                 </RouteGuard>
               </ProtectedRoute>
             } />
