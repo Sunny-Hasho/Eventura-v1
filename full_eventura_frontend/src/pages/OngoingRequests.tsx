@@ -25,11 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Mail, Phone, MapPin, CheckCircle2, Clock, AlertCircle, CheckCircle, CreditCard } from "lucide-react";
+import { User, Mail, Phone, MapPin, CheckCircle2, Clock, AlertCircle, CheckCircle, CreditCard, ThumbsUp, AlertTriangle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { paymentService } from "@/services/paymentService";
 import { reviewService } from "@/services/reviewService";
 import BackButton from "@/components/BackButton";
+import { PaymentStatusBadge } from "@/components/payments/PaymentStatusBadge";
+import { DisputeModal } from "@/components/payments/DisputeModal";
 
 const OngoingRequests = () => {
   const { authState } = useAuth();
@@ -39,13 +41,11 @@ const OngoingRequests = () => {
   const [selectedProvider, setSelectedProvider] = useState<UserResponse | null>(null);
   const [isProviderDetailsOpen, setIsProviderDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [paymentRequest, setPaymentRequest] = useState<ServiceRequestResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const [tab, setTab] = useState(tabParam === "completed" ? "completed" : "assigned");
   const queryClient = useQueryClient();
-  const [processingPayment, setProcessingPayment] = useState<number | null>(null);
+
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -54,6 +54,10 @@ const OngoingRequests = () => {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [reviewRequestId, setReviewRequestId] = useState<number | null>(null);
   const [reviewProviderId, setReviewProviderId] = useState<number | null>(null);
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputePaymentId, setDisputePaymentId] = useState<number | null>(null);
+  const [disputeRequestTitle, setDisputeRequestTitle] = useState("");
+  const [isApproving, setIsApproving] = useState<number | null>(null);
 
   useEffect(() => {
     if (tabParam !== tab) {
@@ -133,6 +137,10 @@ const OngoingRequests = () => {
     switch (status) {
       case "ASSIGNED":
         return "bg-blue-100 text-blue-800";
+      case "IN_PROGRESS":
+        return "bg-purple-100 text-purple-800";
+      case "PENDING_APPROVAL":
+        return "bg-orange-100 text-orange-800";
       case "COMPLETED":
         return "bg-green-100 text-green-800";
       default:
@@ -140,40 +148,49 @@ const OngoingRequests = () => {
     }
   };
 
-  const handlePay = (request: ServiceRequestResponse) => {
-    setPaymentRequest(request);
-    setIsPaymentOpen(true);
-  };
-
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!paymentRequest) return;
-
-    setProcessingPayment(paymentRequest.id);
+  // NEW: Approve and dispute handlers
+  const handleApprove = async (request: ServiceRequestResponse) => {
     try {
-      await paymentService.createPayment({
-        requestId: paymentRequest.id,
-        amount: paymentRequest.budget,
-        paymentMethod: "CREDIT_CARD",
+      setIsApproving(request.id);
+      await serviceRequestService.approveWork(request.id);
+      toast({
+        title: "Work Approved!",
+        description: "Payment has been released to the provider.",
       });
-      toast({ title: "Payment initiated!" });
-      setIsPaymentOpen(false);
-      // Invalidate and refetch payment statuses
-      await queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
-      // Open review modal after payment
-      setReviewRequestId(paymentRequest.id);
-      setReviewProviderId(paymentRequest.assignedProviderId);
-      setIsReviewOpen(true);
-      setReviewRating(0);
-      setReviewComment("");
-      setReviewError(null);
-      setReviewSuccess(false);
+      queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
     } catch (error) {
-      toast({ title: "Payment failed", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to approve work",
+        variant: "destructive",
+      });
     } finally {
-      setProcessingPayment(null);
+      setIsApproving(null);
     }
   };
+
+  const handleDispute = async (request: ServiceRequestResponse) => {
+    try {
+      const payment = await paymentService.getPaymentStatusByRequestId(request.id);
+      setDisputePaymentId(payment.id);
+      setDisputeRequestTitle(request.title);
+      setDisputeModalOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load payment information",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDisputeSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+    queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
+  };
+
+
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,7 +220,7 @@ const OngoingRequests = () => {
       completed: requestsData.content.filter(r => r.status === "COMPLETED").length,
       pending: requestsData.content.filter(r => 
         r.status === "COMPLETED" && 
-        (!paymentStatuses[r.id] || paymentStatuses[r.id] !== "COMPLETED")
+        (!paymentStatuses[r.id] || (paymentStatuses[r.id] !== "COMPLETED" && paymentStatuses[r.id] !== "RELEASED"))
       ).length
     };
   };
@@ -214,7 +231,9 @@ const OngoingRequests = () => {
     return null;
   }
 
-  const assignedRequests = requestsData?.content.filter(r => r.status === "ASSIGNED") || [];
+  const assignedRequests = requestsData?.content.filter(
+    r => r.status === "ASSIGNED" || r.status === "IN_PROGRESS" || r.status === "PENDING_APPROVAL"
+  ) || [];
   const completedRequests = requestsData?.content.filter(r => r.status === "COMPLETED") || [];
   const totalElements = requestsData?.totalElements || 0;
   const totalPages = requestsData?.totalPages || 0;
@@ -225,9 +244,7 @@ const OngoingRequests = () => {
       paymentStatuses[r.id] === "COMPLETED"
   ) || [];
 
-  const paymentPendingRequests = requestsData?.content.filter(
-    r => paymentStatuses[r.id] === "PENDING"
-  ) || [];
+
 
   const handleMarkAsComplete = async (request) => {
     try {
@@ -241,19 +258,7 @@ const OngoingRequests = () => {
     }
   };
 
-  const handlePaymentComplete = async (request) => {
-    try {
-      // Get payment info for this request
-      const payment = await paymentService.getPaymentStatusByRequestId(request.id);
-      await paymentService.updatePaymentStatus(payment.id, "COMPLETED");
-      toast({ title: "Payment marked as completed!" });
-      // Refetch requests and payment statuses
-      queryClient.invalidateQueries({ queryKey: ['myRequests'] });
-      queryClient.invalidateQueries({ queryKey: ['paymentStatuses'] });
-    } catch (error) {
-      toast({ title: "Failed to mark payment as complete", variant: "destructive" });
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-200">
@@ -298,7 +303,7 @@ const OngoingRequests = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="assigned">Assigned</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="payment-pending">Payment Pending</TabsTrigger>
+
           </TabsList>
           <TabsContent value="assigned">
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -347,13 +352,42 @@ const OngoingRequests = () => {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              onClick={() => setSelectedRequest(request)}
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                onClick={() => setSelectedRequest(request)}
                                 className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                            >
-                              View Details
-                            </Button>
+                              >
+                                View Details
+                              </Button>
+                              {request.status === "PENDING_APPROVAL" && (
+                                <>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleApprove(request)}
+                                    disabled={isApproving === request.id}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    {isApproving === request.id ? "Approving..." : (
+                                      <>
+                                        <ThumbsUp className="h-4 w-4 mr-2" />
+                                        Approve
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDispute(request)}
+                                    className="border-red-500 text-red-600 hover:bg-red-50"
+                                  >
+                                    <AlertTriangle className="h-4 w-4 mr-2" />
+                                    Dispute
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </TableCell>
                             <TableCell>
                               <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
@@ -455,23 +489,14 @@ const OngoingRequests = () => {
                             </Button>
                           </TableCell>
                             <TableCell>
-                              {paymentStatuses[request.id] === "COMPLETED" ? (
+                              {paymentStatuses[request.id] === "COMPLETED" || paymentStatuses[request.id] === "RELEASED" ? (
                                 <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                   Paid
                                 </span>
-                              ) : paymentStatuses[request.id] === "PENDING" ? (
-                                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  Payment Pending
-                                </span>
                               ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handlePay(request)}
-                                  className="text-xs border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                                >
-                                  Pay Now
-                                </Button>
+                                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {paymentStatuses[request.id] || "Completed"}
+                                </span>
                               )}
                             </TableCell>
                         </TableRow>
@@ -513,69 +538,7 @@ const OngoingRequests = () => {
               )}
             </div>
           </TabsContent>
-          <TabsContent value="payment-pending">
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              {isLoading ? (
-                <div className="p-8 text-center">Loading requests...</div>
-              ) : paymentPendingRequests.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  No payment pending requests found
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50 hover:bg-gray-50">
-                          <TableHead className="font-semibold text-gray-900">Title</TableHead>
-                          <TableHead className="font-semibold text-gray-900">Event</TableHead>
-                          <TableHead className="font-semibold text-gray-900">Date</TableHead>
-                          <TableHead className="font-semibold text-gray-900">Service Type</TableHead>
-                          <TableHead className="font-semibold text-gray-900">Provider</TableHead>
-                          <TableHead className="font-semibold text-gray-900">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paymentPendingRequests.map((request) => (
-                          <TableRow key={request.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
-                            <TableCell className="text-gray-600">{request.eventName}</TableCell>
-                            <TableCell className="text-gray-600">
-                              {format(new Date(request.eventDate), "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell className="text-gray-600">{request.serviceType}</TableCell>
-                            <TableCell>
-                              {request.assignedProviderId ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewProviderDetails(request)}
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                >
-                                  View Provider
-                                </Button>
-                              ) : (
-                                <span className="text-gray-500">Not Assigned</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePaymentComplete(request)}
-                              >
-                                Payment Complete
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
-            </div>
-          </TabsContent>
+
         </Tabs>
       </div>
 
@@ -605,7 +568,7 @@ const OngoingRequests = () => {
                   Type: {selectedRequest?.serviceType}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Budget: ${selectedRequest?.budget}
+                  {selectedRequest?.assignedPrice ? "Price" : "Budget"}: ${(selectedRequest?.assignedPrice || selectedRequest?.budget || 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -668,42 +631,7 @@ const OngoingRequests = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
-      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Make Payment</DialogTitle>
-            <DialogDescription>
-              Pay for <b>{paymentRequest?.title}</b>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-2">
-            <div className="flex gap-2 mb-2">
-              <CreditCard className="w-8 h-8 text-blue-500" />
-              {/* Add more icons here if desired, e.g. Visa/Mastercard SVGs */}
-            </div>
-            <div className="w-full border-b border-gray-200 mb-4" />
-            <form onSubmit={handlePaymentSubmit} className="w-full flex flex-col gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount</label>
-                <input
-                  type="number"
-                  value={paymentRequest?.budget || ""}
-                  readOnly
-                  className="w-full border rounded px-2 py-2 bg-gray-50 text-lg font-semibold text-center focus:outline-none"
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full mt-2"
-                disabled={processingPayment === paymentRequest?.id}
-              >
-                {processingPayment === paymentRequest?.id ? "Processing..." : "Pay Now"}
-              </Button>
-            </form>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Review Modal */}
       <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
@@ -779,6 +707,17 @@ const OngoingRequests = () => {
           `}</style>
         </DialogContent>
       </Dialog>
+
+      {/* Dispute Modal */}
+      {disputePaymentId && (
+        <DisputeModal
+          isOpen={disputeModalOpen}
+          onClose={() => setDisputeModalOpen(false)}
+          paymentId={disputePaymentId}
+          requestTitle={disputeRequestTitle}
+          onSuccess={handleDisputeSuccess}
+        />
+      )}
     </div>
   );
 };

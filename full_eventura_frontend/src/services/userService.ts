@@ -113,7 +113,7 @@ export const userService = {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/users/${userId}/status`, {
+      const response = await fetch(`${API_URL}/api/admin/users/${userId}/status`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

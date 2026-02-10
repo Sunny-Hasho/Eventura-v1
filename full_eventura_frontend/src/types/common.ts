@@ -15,7 +15,7 @@ export interface PaymentResponse {
   clientId: number;
   providerId: number;
   amount: number;
-  paymentStatus: "PENDING" | "COMPLETED" | "FAILED";
+  paymentStatus: "AWAITING_PAYMENT" | "ESCROWED" | "PENDING_RELEASE" | "RELEASED" | "REFUNDED" | "DISPUTED" | "EXPIRED";
   transactionId: string;
   createdAt: string;
 } 

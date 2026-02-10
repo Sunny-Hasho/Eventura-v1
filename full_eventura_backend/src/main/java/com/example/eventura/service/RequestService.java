@@ -23,6 +23,8 @@ public class RequestService {
     private final UserRepository userRepository;
     private final NotificationService notificationService; // Add NotificationService dependency
     private final WebSocketEventService webSocketEventService; // For dashboard updates
+    private final com.example.eventura.repository.PaymentRepository paymentRepository;
+    private final PaymentService paymentService;
 
     // ... (existing methods until updateRequestStatus)
 
@@ -243,6 +245,135 @@ public class RequestService {
         }
     }
 
+    // ==================== NEW WORK PHASE METHODS ====================
+
+    /**
+     * Provider starts work on assigned request
+     * Status: ASSIGNED -> IN_PROGRESS
+     */
+    public ServiceRequestResponse startWork(Long requestId, Long providerId) {
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+
+        User provider = userRepository.findById(providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
+
+        // Verify provider is assigned
+        if (serviceRequest.getAssignedProvider() == null ||
+                !serviceRequest.getAssignedProvider().getId().equals(providerId)) {
+            throw new UnauthorizedException("You are not the assigned provider for this request");
+        }
+
+        // Verify status
+        if (serviceRequest.getStatus() != ServiceRequest.Status.ASSIGNED) {
+            throw new IllegalStateException("Request must be in ASSIGNED status to start work");
+        }
+
+        // Update status
+        serviceRequest.setStatus(ServiceRequest.Status.IN_PROGRESS);
+        ServiceRequest updatedRequest = serviceRequestRepository.save(serviceRequest);
+
+        // Notify client
+        User client = serviceRequest.getClient();
+        String message = String.format("Provider %s %s has started working on your request: %s",
+                provider.getFirstName(), provider.getLastName(), serviceRequest.getTitle());
+        notificationService.createNotification(client, message);
+
+        webSocketEventService.broadcastRequestChange("IN_PROGRESS");
+        logger.info("Request {} is now IN_PROGRESS", requestId);
+
+        return convertToResponse(updatedRequest);
+    }
+
+    /**
+     * Provider marks work as complete
+     * Status: IN_PROGRESS -> PENDING_APPROVAL
+     * Payment: ESCROWED -> PENDING_RELEASE
+     */
+    public ServiceRequestResponse markComplete(Long requestId, Long providerId) {
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+
+        User provider = userRepository.findById(providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
+
+        // Verify provider is assigned
+        if (serviceRequest.getAssignedProvider() == null ||
+                !serviceRequest.getAssignedProvider().getId().equals(providerId)) {
+            throw new UnauthorizedException("You are not the assigned provider for this request");
+        }
+
+        // Verify status
+        if (serviceRequest.getStatus() != ServiceRequest.Status.IN_PROGRESS) {
+            throw new IllegalStateException("Request must be IN_PROGRESS to mark as complete");
+        }
+
+        // Update request status
+        serviceRequest.setStatus(ServiceRequest.Status.PENDING_APPROVAL);
+        ServiceRequest updatedRequest = serviceRequestRepository.save(serviceRequest);
+
+        // Update payment status to PENDING_RELEASE
+        com.example.eventura.entity.Payment payment = paymentRepository.findTopByRequestOrderByCreatedAtDesc(serviceRequest)
+                .orElseThrow(() -> new ResourceNotFoundException("No payment found for this request"));
+
+        if (payment.getPaymentStatus() != com.example.eventura.entity.Payment.PaymentStatus.ESCROWED) {
+            throw new IllegalStateException("Payment must be ESCROWED to mark work complete");
+        }
+
+        payment.setPaymentStatus(com.example.eventura.entity.Payment.PaymentStatus.PENDING_RELEASE);
+        paymentRepository.save(payment);
+
+        // Notify client
+        User client = serviceRequest.getClient();
+        String message = String.format("Provider %s %s has completed work on request: %s. Please review and approve payment.",
+                provider.getFirstName(), provider.getLastName(), serviceRequest.getTitle());
+        notificationService.createNotification(client, message);
+
+        webSocketEventService.broadcastRequestChange("PENDING_APPROVAL");
+        logger.info("Request {} is now PENDING_APPROVAL, payment PENDING_RELEASE", requestId);
+
+        return convertToResponse(updatedRequest);
+    }
+
+    /**
+     * Client approves work and releases payment
+     * Status: PENDING_APPROVAL -> COMPLETED
+     * Payment: PENDING_RELEASE -> RELEASED
+     */
+    public ServiceRequestResponse approveWork(Long requestId, Long clientId) {
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+
+        // Verify client owns request
+        if (!serviceRequest.getClient().getId().equals(clientId)) {
+            throw new UnauthorizedException("Only the client can approve work");
+        }
+
+        // Verify status
+        if (serviceRequest.getStatus() != ServiceRequest.Status.PENDING_APPROVAL) {
+            throw new IllegalStateException("Request must be PENDING_APPROVAL to approve");
+        }
+
+        // Find payment
+        com.example.eventura.entity.Payment payment = paymentRepository.findTopByRequestOrderByCreatedAtDesc(serviceRequest)
+                .orElseThrow(() -> new ResourceNotFoundException("No payment found for this request"));
+
+        // Release payment (this also updates request status to COMPLETED)
+        paymentService.releasePayment(payment.getId(), client.getEmail());
+
+        // Reload updated request
+        ServiceRequest completedRequest = serviceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+
+        webSocketEventService.broadcastRequestChange("COMPLETED");
+        logger.info("Request {} COMPLETED and payment RELEASED", requestId);
+
+        return convertToResponse(completedRequest);
+    }
+
     private ServiceRequestResponse convertToResponse(ServiceRequest serviceRequest) {
         ServiceRequestResponse response = new ServiceRequestResponse();
         response.setId(serviceRequest.getId());
@@ -254,6 +385,7 @@ public class RequestService {
         response.setServiceType(serviceRequest.getServiceType());
         response.setDescription(serviceRequest.getDescription());
         response.setBudget(serviceRequest.getBudget());
+        response.setAssignedPrice(serviceRequest.getAssignedPrice());
         response.setStatus(serviceRequest.getStatus().name());
         response.setCreatedAt(serviceRequest.getCreatedAt());
         if (serviceRequest.getAssignedProvider() != null) {

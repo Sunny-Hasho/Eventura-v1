@@ -15,6 +15,7 @@ import {
   Calendar,
   MessageSquare,
   FileText,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -76,10 +77,13 @@ const sidebarCategories: SidebarCategory[] = [
         icon: Calendar,
         href: "/admin/calendar",
       },
+      {
+        title: "Payments",
+        icon: DollarSign,
+        href: "/admin/payments",
+      },
     ],
   },
- 
- 
 ];
 
 export function AdminSidebar({ isCollapsed, onCollapse }: SidebarProps) {

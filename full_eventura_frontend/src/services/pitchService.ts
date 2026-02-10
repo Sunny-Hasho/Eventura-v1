@@ -214,6 +214,43 @@ class PitchService {
       throw error;
     }
   }
+
+  // NEW: Accept pitch and create escrow payment
+  async acceptPitch(pitchId: number): Promise<PitchResponse> {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/pitches/${pitchId}/accept`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Not authenticated");
+        }
+        if (response.status === 403) {
+          throw new Error("Only clients can accept pitches");
+        }
+        if (response.status === 404) {
+          throw new Error("Pitch not found");
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to accept pitch");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error accepting pitch:", error);
+      throw error;
+    }
+  }
 }
 
 export const pitchService = new PitchService(); 

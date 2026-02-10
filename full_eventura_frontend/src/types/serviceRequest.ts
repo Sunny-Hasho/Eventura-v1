@@ -1,6 +1,6 @@
 export type ServiceType = "CATERING" | "WEDDING_PLANNING" | "VENUE" | "PHOTOGRAPHY" | "MUSIC" | "DECORATION" | "OTHER";
-export type RequestStatus = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED";
-export type ServiceRequestStatus = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED" | "DRAFT" | "DELETED";
+export type RequestStatus = "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "PENDING_APPROVAL" | "COMPLETED" | "CANCELLED";
+export type ServiceRequestStatus = "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "PENDING_APPROVAL" | "COMPLETED" | "CANCELLED" | "DRAFT" | "DELETED";
 
 export interface ServiceRequestRequest {
   title: string;
@@ -25,6 +25,7 @@ export interface ServiceRequestResponse {
   serviceType: ServiceType;
   description: string;
   budget: number;
+  assignedPrice?: number;
   status: ServiceRequestStatus;
   assignedProviderId?: number;
   createdAt: string;

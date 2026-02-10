@@ -7,6 +7,7 @@ import com.example.eventura.dto.response.ServiceRequestResponse;
 import com.example.eventura.dto.response.UserResponse;
 import com.example.eventura.dto.response.VerificationDocumentResponse;
 import com.example.eventura.dto.response.ReviewResponse;
+import com.example.eventura.dto.response.PaymentResponse;
 import com.example.eventura.security.JwtTokenProvider;
 import com.example.eventura.service.*;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AdminController {
     private final NotificationService notificationService;
     private final PortfolioService portfolioService;
     private final VerificationDocumentService verificationDocumentService;
+    private final PaymentService paymentService;
     private final JwtTokenProvider jwtTokenProvider;
 
     @PutMapping("/users/{userId}/status")
@@ -109,6 +111,13 @@ public class AdminController {
     public ResponseEntity<ProviderResponse> updateProviderVerificationStatus(
             @PathVariable Long providerId, @RequestBody Boolean isVerified) {
         return ResponseEntity.ok(providerService.updateProviderVerificationStatus(providerId, isVerified));
+    }
+
+    @GetMapping("/payments")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<PaymentResponse>> getAllPayments(
+            @RequestParam(required = false) String status, Pageable pageable) {
+        return ResponseEntity.ok(paymentService.getAllPayments(status, pageable));
     }
 
     private Long getUserIdFromToken(String authHeader) {
