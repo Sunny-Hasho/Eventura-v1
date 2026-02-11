@@ -43,9 +43,13 @@ services:
       
       # Google OAuth
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      
+      #added local host 8081 support mail and app url
       # CORS - Frontend URL
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:80}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://localhost:80}
+      
+      # App Config
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-support@eventura.com}
     depends_on:
       mysqldb:
         condition: service_healthy
