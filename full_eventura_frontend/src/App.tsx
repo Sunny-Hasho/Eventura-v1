@@ -11,6 +11,7 @@ import WebSocketProvider from "./components/WebSocketProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import RoleSelectionPage from "./pages/RoleSelectionPage";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
@@ -33,6 +34,7 @@ import UsersPage from "./pages/admin/UsersPage";
 import ProviderVerificationPage from "./pages/admin/ProviderVerificationPage";
 import RequestCalendarPage from "./pages/admin/RequestCalendarPage";
 import PaymentsPage from "./pages/admin/PaymentsPage";
+import ReportsPage from "./pages/admin/ReportsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +58,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/register" element={<Register />} />
             <Route path="/join" element={<RoleSelectionPage />} />
 
@@ -99,6 +102,13 @@ const App = () => (
               <ProtectedRoute requiredRole="ADMIN">
                 <RouteGuard>
                   <PaymentsPage />
+                </RouteGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/reports" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RouteGuard>
+                  <ReportsPage />
                 </RouteGuard>
               </ProtectedRoute>
             } />

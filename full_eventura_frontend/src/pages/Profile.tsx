@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { UpdateUserRequest } from "@/types/auth";
 import Navbar from "@/components/Navbar";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { User, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BackButton from "@/components/BackButton";
@@ -25,6 +25,7 @@ const Profile = () => {
     mobileNumber: "",
   });
   const [password, setPassword] = useState("");
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     document.title = "My Profile | Eventura";
@@ -184,6 +185,14 @@ const Profile = () => {
                   </div>
                 </div>
                 <p className="text-lg text-gray-600 font-normal mt-2">Welcome to your profile.</p>
+                
+                {user?.role === 'PROVIDER' && (
+                  <div className="mt-4">
+                    <Button asChild variant="default" className="bg-purple-600 hover:bg-purple-700 text-white">
+                      <Link to="/provider/profile">Manage Provider Profile</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-8">
@@ -222,12 +231,8 @@ const Profile = () => {
                       name="email"
                       type="email"
                       value={formData.email}
-                      onChange={handleChange}
-                      readOnly={!isEditing}
-                      className={cn(
-                        "bg-transparent border-gray-200 text-base h-10",
-                        !isEditing && "border-none"
-                      )}
+                      readOnly={true}
+                      className="bg-transparent border-gray-200 text-base h-10 border-none text-gray-500 cursor-not-allowed"
                     />
                   </div>
                   
@@ -246,23 +251,24 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {isEditing && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wider text-gray-500">
-                      New Password <span className="text-sm text-gray-500">(leave blank to keep current password)</span>
-                    </Label>
-                    <Input
-                      name="password"
-                      type="password"
-                      value={password}
-                      onChange={handlePasswordChange}
-                      placeholder="Enter new password"
-                      className="bg-transparent border-gray-200 text-base h-10"
-                    />
-                  </div>
-                )}
+                {/* Password Change Removed from here - moved to specialized modal */}
 
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+                  {user?.authProvider !== 'GOOGLE' ? (
+                    <Button 
+                      variant="outline" 
+                      type="button"
+                      onClick={() => setIsPasswordModalOpen(true)}
+                    >
+                      Change Password
+                    </Button>
+                  ) : (
+                    <div className="text-sm text-gray-500 italic">
+                      Signed in with Google
+                    </div>
+                  )}
+
+                  <div className="flex space-x-3">
                   {!isEditing ? (
                     <Button
                       variant="outline"
@@ -312,8 +318,9 @@ const Profile = () => {
                           Delete Account
                         </AlertDialogAction>
                       </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </form>
 
@@ -324,7 +331,144 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      <ChangePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+        email={user?.email || ""}
+      />
     </div>
+  );
+};
+
+// -- Internal Component for Change Password Modal --
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { authService } from "@/services/authService";
+
+const ChangePasswordModal = ({ isOpen, onClose, email }: { isOpen: boolean; onClose: () => void; email: string }) => {
+  const [step, setStep] = useState<"INIT" | "OTP">("INIT");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const { authState } = useAuth();
+  const token = localStorage.getItem("token"); // Or however we get token, assuming useAuth doesn't expose it directly yet, but usually it's in localStorage or cookie.
+  // Actually useAuth might need to expose token or we get it from storage.
+  // Let's assume localStorage "token" for now as per common patterns, or modifying useAuth if needed.
+
+  const handleInitiate = async () => {
+    setIsLoading(true);
+    try {
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) throw new Error("Not authenticated");
+      
+      await authService.initiateChangePassword(email, storedToken);
+      toast({
+        title: "OTP Sent",
+        description: "Please check your email for the verification code.",
+      });
+      setStep("OTP");
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send OTP",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+         title: "Error",
+         description: "Passwords do not match",
+         variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) throw new Error("Not authenticated");
+
+      await authService.changePassword(email, otp, newPassword, storedToken);
+      toast({
+        title: "Success",
+        description: "Password changed successfully. Please login again.",
+      });
+      onClose();
+      // Optional: Logout user
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to change password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+        setStep("INIT");
+        setOtp("");
+        setNewPassword("");
+        setConfirmPassword("");
+    }
+  }, [isOpen]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change Password</DialogTitle>
+          <DialogDescription>
+            {step === "INIT" 
+              ? "We will send a One-Time Password (OTP) to your email to verify your identity."
+              : "Enter the OTP sent to your email and your new password."}
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === "INIT" ? (
+             <div className="py-4">
+                 <p className="text-sm text-gray-500 mb-4">Email: {email}</p>
+                 <Button onClick={handleInitiate} disabled={isLoading} className="w-full">
+                    {isLoading ? "Sending..." : "Send OTP"}
+                 </Button>
+             </div>
+        ) : (
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label>OTP Code</Label>
+                    <Input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter 6-digit code" />
+                </div>
+                <div className="space-y-2">
+                    <Label>New Password</Label>
+                    <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Confirm Password</Label>
+                    <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" />
+                </div>
+                <Button onClick={handleConfirm} disabled={isLoading} className="w-full">
+                    {isLoading ? "Updating..." : "Update Password"}
+                </Button>
+            </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 

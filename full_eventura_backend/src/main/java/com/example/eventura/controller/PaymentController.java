@@ -101,7 +101,7 @@ public class PaymentController {
 
     // Client releases payment to provider after approving work
     @PostMapping("/{paymentId}/release")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN')")
     public ResponseEntity<PaymentResponse> releasePayment(
             @PathVariable Long paymentId,
             @RequestHeader("Authorization") String token) {

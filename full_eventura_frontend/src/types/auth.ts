@@ -11,6 +11,7 @@ export interface User {
   mobileNumber: string;
   role: UserRole;
   accountStatus: AccountStatus;
+  authProvider?: 'LOCAL' | 'GOOGLE';
 }
 
 export interface RegisterRequest {
