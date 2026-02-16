@@ -28,4 +28,24 @@ export interface PortfolioPage {
   };
   totalPages: number;
   totalElements: number;
+}
+
+export interface PortfolioAuditLog {
+  id: number;
+  portfolio: {
+      id: number;
+      title: string;
+  };
+  provider: {
+      id: number;
+      companyName: string;
+      user: {
+          id: number;
+          email: string;
+      }
+  };
+  fieldName: string;
+  oldValue: string;
+  newValue: string;
+  changedAt: string;
 } 

@@ -1,4 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { cn } from "@/lib/utils";
@@ -15,6 +18,16 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
+
+  // View/Edit State
+  const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    mobileNumber: ""
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -68,6 +81,32 @@ export default function UsersPage() {
       fetchUsers();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update user status");
+    }
+  };
+  const handleViewUser = async (user: UserResponse) => {
+    setSelectedUser(user);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditUser = (user: UserResponse) => {
+    setSelectedUser(user);
+    setEditForm({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        mobileNumber: user.mobileNumber
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const submitEditUser = async () => {
+    if (!selectedUser) return;
+    try {
+        await userService.updateUserDetails(selectedUser.id, editForm);
+        toast.success("User updated successfully");
+        setIsEditDialogOpen(false);
+        fetchUsers();
+    } catch (err) {
+        toast.error("Failed to update user");
     }
   };
 
@@ -133,8 +172,8 @@ export default function UsersPage() {
                           </div>
                         </div>
                         <div className="mt-3 flex space-x-2">
-                          <Button variant="outline" size="sm">View Details</Button>
-                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleViewUser(user)}>View Details</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>Edit</Button>
                           <Button
                             variant={user.accountStatus === "ACTIVE" ? "destructive" : "default"}
                             size="sm"
@@ -177,6 +216,87 @@ export default function UsersPage() {
           </div>
         </main>
       </div>
+
+
+      {/* View User Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label className="text-muted-foreground">First Name</Label>
+                        <p className="font-medium">{selectedUser.firstName}</p>
+                    </div>
+                    <div>
+                        <Label className="text-muted-foreground">Last Name</Label>
+                        <p className="font-medium">{selectedUser.lastName}</p>
+                    </div>
+                    <div>
+                        <Label className="text-muted-foreground">Email</Label>
+                        <p className="font-medium">{selectedUser.email}</p>
+                    </div>
+                    <div>
+                        <Label className="text-muted-foreground">Mobile</Label>
+                        <p className="font-medium">{selectedUser.mobileNumber}</p>
+                    </div>
+                    <div>
+                        <Label className="text-muted-foreground">Role</Label>
+                        <Badge className={getRoleBadgeColor(selectedUser.role)}>{selectedUser.role}</Badge>
+                    </div>
+                    <div>
+                        <Label className="text-muted-foreground">Status</Label>
+                        <Badge className={getStatusBadgeColor(selectedUser.accountStatus)}>{selectedUser.accountStatus}</Badge>
+                    </div>
+                </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input 
+                            id="firstName" 
+                            value={editForm.firstName} 
+                            onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input 
+                            id="lastName" 
+                            value={editForm.lastName} 
+                            onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="mobileNumber">Mobile Number</Label>
+                    <Input 
+                        id="mobileNumber" 
+                        value={editForm.mobileNumber} 
+                        onChange={(e) => setEditForm({...editForm, mobileNumber: e.target.value})}
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                <Button onClick={submitEditUser}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
