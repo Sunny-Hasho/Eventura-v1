@@ -44,6 +44,20 @@ public class AdminController {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
 
+    @GetMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
+        // Admin can view any user
+        return ResponseEntity.ok(userService.getUserById(userId, userId));
+    }
+
+    @PutMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable Long userId, @RequestBody com.example.eventura.dto.request.UpdateUserRequest request) {
+        return ResponseEntity.ok(userService.updateUser(userId, request));
+    }
+
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUserAccount(@PathVariable Long userId) {
@@ -77,6 +91,14 @@ public class AdminController {
     public ResponseEntity<Page<PortfolioResponse>> getAllPortfolios(
             @RequestParam(required = false) String status, Pageable pageable) {
         return ResponseEntity.ok(portfolioService.getAllPortfolios(status, pageable));
+    }
+
+    @DeleteMapping("/portfolios/{portfolioId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePortfolio(
+            @PathVariable Long portfolioId, @RequestParam String reason) {
+        portfolioService.deletePortfolioByAdmin(portfolioId, reason);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/reviews/{reviewId}/status")
