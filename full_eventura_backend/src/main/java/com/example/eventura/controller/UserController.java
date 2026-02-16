@@ -51,6 +51,32 @@ public class UserController {
         return ResponseEntity.ok(userService.verifyOtp(request));
     }
 
+    //Forgot Password
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody com.example.eventura.dto.request.ForgotPasswordRequest request) {
+        return ResponseEntity.ok(userService.forgotPassword(request.getEmail()));
+    }
+
+    //Reset Password
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody com.example.eventura.dto.request.ResetPasswordRequest request) {
+        return ResponseEntity.ok(userService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword()));
+    }
+
+    // Authenticated Change Password Flow
+    @PostMapping("/change-password/initiate")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> initiateChangePassword(@RequestBody com.example.eventura.dto.request.ForgotPasswordRequest request) {
+        // Re-using ForgotPasswordRequest as it just needs email
+        return ResponseEntity.ok(userService.initiateChangePassword(request.getEmail()));
+    }
+
+    @PostMapping("/change-password/confirm")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> confirmChangePassword(@RequestBody com.example.eventura.dto.request.ChangePasswordRequest request) {
+        return ResponseEntity.ok(userService.changePassword(request.getEmail(), request.getOtp(), request.getNewPassword()));
+    }
+
     //Set Status
     @PutMapping("/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")

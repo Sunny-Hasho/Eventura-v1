@@ -140,6 +140,109 @@ export const authService = {
     }
   },
 
+  async forgotPassword(email: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("User not found with this email");
+        }
+        throw new Error("Failed to send OTP");
+      }
+
+      return await response.text(); // Returns "OTP_SENT"
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to send OTP");
+    }
+  },
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp, newPassword }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Invalid OTP or Expired");
+        }
+        throw new Error("Failed to reset password");
+      }
+
+      return await response.text();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to reset password");
+    }
+  },
+
+  async initiateChangePassword(email: string, token: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/change-password/initiate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to initiate password change");
+      }
+
+      return await response.text();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to initiate password change");
+    }
+  },
+
+  async changePassword(email: string, otp: string, newPassword: string, token: string): Promise<string> {
+    try {
+      const response = await fetch(`${API_URL}/users/change-password/confirm`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email, otp, newPassword }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Invalid OTP or Expired");
+        }
+        throw new Error("Failed to change password");
+      }
+
+      return await response.text();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to change password");
+    }
+  },
+
   async getUserInfo(token: string): Promise<User> {
     try {
       const response = await fetch(`${API_URL}/users/me`, {

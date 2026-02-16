@@ -80,7 +80,7 @@ const Navbar = () => {
                         <Link to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} className="cursor-pointer">Dashboard</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to={user?.role === "PROVIDER" ? "/provider/profile" : "/profile"} className="cursor-pointer">Profile</Link>
+                        <Link to="/profile" className="cursor-pointer">Profile</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 cursor-pointer">
                         Log out

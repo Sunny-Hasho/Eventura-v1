@@ -43,7 +43,7 @@ const OngoingRequests = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [tab, setTab] = useState(tabParam === "completed" ? "completed" : "assigned");
+  const [tab, setTab] = useState(tabParam === "completed" ? "completed" : tabParam === "refunded" ? "refunded" : "assigned");
   const queryClient = useQueryClient();
 
   const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -213,11 +213,12 @@ const OngoingRequests = () => {
   };
 
   const getStatusSummary = () => {
-    if (!requestsData?.content) return { assigned: 0, completed: 0, pending: 0 };
+    if (!requestsData?.content) return { assigned: 0, completed: 0, pending: 0, refunded: 0 };
     
     return {
       assigned: requestsData.content.filter(r => r.status === "ASSIGNED").length,
       completed: requestsData.content.filter(r => r.status === "COMPLETED").length,
+      refunded: requestsData.content.filter(r => r.status === "CANCELLED").length,
       pending: requestsData.content.filter(r => 
         r.status === "COMPLETED" && 
         (!paymentStatuses[r.id] || (paymentStatuses[r.id] !== "COMPLETED" && paymentStatuses[r.id] !== "RELEASED"))
@@ -235,6 +236,7 @@ const OngoingRequests = () => {
     r => r.status === "ASSIGNED" || r.status === "IN_PROGRESS" || r.status === "PENDING_APPROVAL"
   ) || [];
   const completedRequests = requestsData?.content.filter(r => r.status === "COMPLETED") || [];
+  const refundedRequests = requestsData?.content.filter(r => r.status === "CANCELLED") || [];
   const totalElements = requestsData?.totalElements || 0;
   const totalPages = requestsData?.totalPages || 0;
 
@@ -289,6 +291,13 @@ const OngoingRequests = () => {
                 <p className="text-xs text-gray-500">Completed</p>
               </div>
             </div>
+            <div className="bg-gray-200 rounded-lg shadow p-4 flex items-center gap-2">
+              <ThumbsUp className="h-5 w-5 text-red-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{statusSummary.refunded}</p>
+                <p className="text-xs text-gray-500">Refunded</p>
+              </div>
+            </div>
             <div className="bg-gray-200  rounded-lg shadow p-4 flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-500" />
               <div>
@@ -303,6 +312,7 @@ const OngoingRequests = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="assigned">Assigned</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="refunded">Refunded</TabsTrigger>
 
           </TabsList>
           <TabsContent value="assigned">
@@ -329,7 +339,10 @@ const OngoingRequests = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {assignedRequests.map((request) => (
+                      {assignedRequests.map((request) => {
+                        const isDisputed = paymentStatuses[request.id] === "DISPUTED";
+                        
+                        return (
                           <TableRow key={request.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
                             <TableCell className="text-gray-600">{request.eventName}</TableCell>
@@ -360,42 +373,52 @@ const OngoingRequests = () => {
                               >
                                 View Details
                               </Button>
-                              {request.status === "PENDING_APPROVAL" && (
+                              {(request.status === "PENDING_APPROVAL" || isDisputed) && (
                                 <>
                                   <Button
                                     variant="default"
                                     size="sm"
                                     onClick={() => handleApprove(request)}
                                     disabled={isApproving === request.id}
-                                    className="bg-green-600 hover:bg-green-700"
+                                    className={`${isDisputed ? "bg-orange-600 hover:bg-orange-700" : "bg-green-600 hover:bg-green-700"}`}
                                   >
-                                    {isApproving === request.id ? "Approving..." : (
+                                    {isApproving === request.id ? "Processing..." : (
                                       <>
                                         <ThumbsUp className="h-4 w-4 mr-2" />
-                                        Approve
+                                        {isDisputed ? "Resolve & Release" : "Approve"}
                                       </>
                                     )}
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDispute(request)}
-                                    className="border-red-500 text-red-600 hover:bg-red-50"
-                                  >
-                                    <AlertTriangle className="h-4 w-4 mr-2" />
-                                    Dispute
-                                  </Button>
+                                  {!isDisputed && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDispute(request)}
+                                      className="border-red-500 text-red-600 hover:bg-red-50"
+                                    >
+                                      <AlertTriangle className="h-4 w-4 mr-2" />
+                                      Dispute
+                                    </Button>
+                                  )}
                                 </>
                               )}
                             </div>
                           </TableCell>
                             <TableCell>
-                              <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
-                                {request.status}
-                              </span>
+                              {isDisputed ? (
+                                <span className="px-3 py-1.5 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center gap-1 w-fit">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  DISPUTED
+                                </span>
+                              ) : (
+                                <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
+                                  {request.status}
+                                </span>
+                              )}
                             </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   </div>
@@ -498,6 +521,107 @@ const OngoingRequests = () => {
                                   {paymentStatuses[request.id] || "Completed"}
                                 </span>
                               )}
+                            </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  </div>
+
+                  {totalElements > 20 && (
+                    <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                      <div className="text-sm text-gray-600">
+                        Showing {currentPage * 20 + 1} to{" "}
+                        {Math.min((currentPage + 1) * 20, totalElements)} of{" "}
+                        {totalElements} requests
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 0}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage >= totalPages - 1}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="refunded">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              {isLoading ? (
+                <div className="p-8 text-center">Loading requests...</div>
+              ) : refundedRequests.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No refunded requests found
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                        <TableRow className="bg-gray-50 hover:bg-gray-50">
+                          <TableHead className="font-semibold text-gray-900">Title</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Event</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Date</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Service Type</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Provider</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                          <TableHead className="font-semibold text-gray-900">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {refundedRequests.map((request) => (
+                          <TableRow key={request.id} className="hover:bg-red-50/30">
+                            <TableCell className="font-medium text-gray-900">{request.title}</TableCell>
+                            <TableCell className="text-gray-600">{request.eventName}</TableCell>
+                            <TableCell className="text-gray-600">
+                            {format(new Date(request.eventDate), "MMM d, yyyy")}
+                          </TableCell>
+                            <TableCell className="text-gray-600">{request.serviceType}</TableCell>
+                          <TableCell>
+                            {request.assignedProviderId ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewProviderDetails(request)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                View Provider
+                              </Button>
+                            ) : (
+                                <span className="text-gray-500">Not Assigned</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              onClick={() => setSelectedRequest(request)}
+                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
+                            <TableCell>
+                                <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 flex items-center gap-1 w-fit">
+                                  <AlertCircle className="h-3 w-3" />
+                                  Refunded
+                                </span>
                             </TableCell>
                         </TableRow>
                       ))}

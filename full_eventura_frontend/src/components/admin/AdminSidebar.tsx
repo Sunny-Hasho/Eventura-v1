@@ -61,6 +61,11 @@ const sidebarCategories: SidebarCategory[] = [
         icon: Shield,
         href: "/admin/verification",
       },
+      {
+        title: "Reports",
+        icon: MessageSquare,
+        href: "/admin/reports",
+      },
     ],
   },
   {

@@ -52,6 +52,9 @@ public class Payment {
     @Column(name = "provider_amount")
     private Double providerAmount; // Amount provider receives after commission
 
+    @Column(name = "dispute_reason")
+    private String disputeReason;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

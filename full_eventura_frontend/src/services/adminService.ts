@@ -78,5 +78,16 @@ export const adminService = {
 
     if (!response.ok) throw new Error("Failed to update user status");
     return response.json();
+  },
+  async getEarningsStats(): Promise<{ totalEarnings: number; pendingEscrow: number; totalPayouts: number }> {
+     const token = getAuthToken();
+     if (!token) throw new Error("Not authenticated");
+
+     const response = await fetch(`${API_URL}/api/admin/stats/earnings`, {
+       headers: { Authorization: `Bearer ${token}` },
+     });
+
+     if (!response.ok) throw new Error("Failed to fetch earnings stats");
+     return response.json();
   }
 };

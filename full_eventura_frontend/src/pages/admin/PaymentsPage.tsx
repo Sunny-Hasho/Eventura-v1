@@ -44,6 +44,7 @@ interface Payment {
   amount: number;
   paymentStatus: "AWAITING_PAYMENT" | "ESCROWED" | "RELEASED" | "REFUNDED" | "DISPUTED";
   transactionId?: string;
+  disputeReason?: string;
   createdAt: string;
   requestTitle?: string; // These might need to be fetched separately or included in DTO
 }
@@ -103,6 +104,12 @@ export default function PaymentsPage() {
     }
   };
 
+  // Fetch Earnings Stats
+  const { data: stats } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: adminService.getEarningsStats,
+  });
+
   return (
     <div className="relative min-h-screen bg-background">
       <AdminSidebar
@@ -118,6 +125,46 @@ export default function PaymentsPage() {
         <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Payments & Disputes</h2>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+              <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium">Total Revenue</h3>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="p-6 pt-0">
+                <div className="text-2xl font-bold text-green-600">
+                  ${(stats?.totalEarnings || 0).toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">Platform fees earned</p>
+              </div>
+            </div>
+            <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+              <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium">Escrowed Funds</h3>
+                <Lock className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="p-6 pt-0">
+                <div className="text-2xl font-bold text-blue-600">
+                  ${(stats?.pendingEscrow || 0).toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">Currently held in escrow</p>
+              </div>
+            </div>
+            <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+              <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium">Total Payouts</h3>
+                <RefreshCcw className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="p-6 pt-0">
+                <div className="text-2xl font-bold">
+                  ${(stats?.totalPayouts || 0).toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">Paid to providers</p>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2 py-4">
@@ -177,6 +224,11 @@ export default function PaymentsPage() {
                       <TableCell>{payment.providerId}</TableCell>
                       <TableCell>{format(new Date(payment.createdAt), "PP")}</TableCell>
                       <TableCell className="text-right space-x-2">
+                        {payment.paymentStatus === "DISPUTED" && payment.disputeReason && (
+                          <div className="text-xs text-red-500 font-medium mb-1 mr-2 text-right">
+                            Reason: {payment.disputeReason}
+                          </div>
+                        )}
                         {(payment.paymentStatus === "DISPUTED" || payment.paymentStatus === "ESCROWED") && (
                           <>
                             <Button 

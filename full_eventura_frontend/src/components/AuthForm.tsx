@@ -250,9 +250,9 @@ const AuthForm = ({ type, onSuccess, preSelectedRole }: AuthFormProps) => {
 
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <a href="#" className="text-eventura-700 hover:text-eventura-500">
+                <Link to="/forgot-password" className="text-eventura-700 hover:text-eventura-500">
                   Forgot password?
-                </a>
+                </Link>
               </div>
             </div>
 

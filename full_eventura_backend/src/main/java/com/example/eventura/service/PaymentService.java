@@ -162,6 +162,7 @@ public class PaymentService {
         response.setAmount(payment.getAmount());
         response.setPaymentStatus(payment.getPaymentStatus().name());
         response.setTransactionId(payment.getTransactionId());
+        response.setDisputeReason(payment.getDisputeReason());
         response.setCreatedAt(payment.getCreatedAt());
         return response;
     }
@@ -275,6 +276,9 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
 
         User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
         
         // Allow Client OR Admin to release payment
         boolean isClient = payment.getClient().getId().equals(user.getId());
@@ -284,8 +288,19 @@ public class PaymentService {
             throw new UnauthorizedException("Only the client or admin can release payment");
         }
 
-        if (payment.getPaymentStatus() != Payment.PaymentStatus.PENDING_RELEASE) {
-            throw new IllegalStateException("Payment is not pending release");
+        if (isAdmin) {
+            // Admin can release from PENDING_RELEASE, DISPUTED, or ESCROWED
+            if (payment.getPaymentStatus() != Payment.PaymentStatus.PENDING_RELEASE &&
+                payment.getPaymentStatus() != Payment.PaymentStatus.DISPUTED &&
+                payment.getPaymentStatus() != Payment.PaymentStatus.ESCROWED) {
+                throw new IllegalStateException("Payment cannot be released in its current state (Valid states for Admin: PENDING_RELEASE, DISPUTED, ESCROWED)");
+            }
+        } else {
+            // Client can release when PENDING_RELEASE or DISPUTED (resolving dispute)
+            if (payment.getPaymentStatus() != Payment.PaymentStatus.PENDING_RELEASE &&
+                payment.getPaymentStatus() != Payment.PaymentStatus.DISPUTED) {
+                throw new IllegalStateException("Payment is not in a releasable state");
+            }
         }
 
         payment.setPaymentStatus(Payment.PaymentStatus.RELEASED);
@@ -346,8 +361,14 @@ public class PaymentService {
         User client = payment.getClient();
         User provider = payment.getProvider();
 
-        String clientMessage = String.format("Your payment of Rs %s has been refunded. Reason: %s",
-                payment.getAmount(), reason);
+        String clientMessage;
+        if (payment.getPaymentStatus() == Payment.PaymentStatus.DISPUTED) {
+            clientMessage = String.format("Your dispute has been resolved. Payment of Rs %s has been refunded. Reason: %s",
+                    payment.getAmount(), reason);
+        } else {
+            clientMessage = String.format("Your payment of Rs %s has been refunded. Reason: %s",
+                    payment.getAmount(), reason);
+        }
         notificationService.createNotification(client, clientMessage);
 
         String providerMessage = String.format("Payment for request: %s has been refunded to client. Reason: %s",
@@ -378,6 +399,7 @@ public class PaymentService {
         }
 
         payment.setPaymentStatus(Payment.PaymentStatus.DISPUTED);
+        payment.setDisputeReason(disputeReason);
         Payment disputedPayment = paymentRepository.save(payment);
 
         // Notify provider and admin
