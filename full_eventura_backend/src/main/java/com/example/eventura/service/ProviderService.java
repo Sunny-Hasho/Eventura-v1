@@ -32,6 +32,8 @@ public class ProviderService {
     private final NotificationService notificationService;
     private final WebSocketEventService webSocketEventService;
 
+    private final PortfolioService portfolioService;
+
     public ProviderResponse createProviderProfile(Long userId, ProviderProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -190,6 +192,9 @@ public class ProviderService {
     }
 
     public PortfolioResponse createPortfolio(Long providerId, PortfolioRequest request) {
+        // Delegate to PortfolioService for consistency if desired, otherwise keep existing
+        // For now logging edits is key, creation can stay here or move.
+        // Let's keep existing creation to avoid breaking changes, but add the new methods.
         ServiceProvider provider = serviceProviderRepository.findById(providerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found"));
 
@@ -213,6 +218,14 @@ public class ProviderService {
 
         return portfolioRepository.findByProvider(provider, pageable)
                 .map(this::convertToPortfolioResponse);
+    }
+
+    public PortfolioResponse updatePortfolio(Long providerId, Long portfolioId, PortfolioRequest request) {
+        return portfolioService.updatePortfolio(providerId, portfolioId, request);
+    }
+
+    public java.util.List<com.example.eventura.entity.PortfolioAuditLog> getPortfolioHistory(Long portfolioId) {
+        return portfolioService.getPortfolioHistory(portfolioId);
     }
 
     public void deletePortfolio(Long providerId, Long portfolioId, Long userId) {

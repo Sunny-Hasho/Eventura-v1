@@ -141,4 +141,33 @@ export const userService = {
       throw new Error("Failed to update user status");
     }
   },
+
+  async getUserDetails(userId: number): Promise<UserResponse> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch user details");
+    return await response.json();
+  },
+
+  async updateUserDetails(userId: number, data: Partial<UserResponse>): Promise<UserResponse> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+        method: "PUT",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (!response.ok) throw new Error("Failed to update user details");
+    return await response.json();
+  }
 }; 
