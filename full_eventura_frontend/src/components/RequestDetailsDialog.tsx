@@ -10,6 +10,9 @@ import {
 import { ServiceRequestResponse } from "@/types/serviceRequest";
 import { UserResponse, userService } from "@/services/userService";
 import { Button } from "@/components/ui/button";
+import { ReportDialog } from "@/components/ReportDialog";
+import { useAuth } from "@/context/AuthContext";
+import { AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -22,8 +25,12 @@ interface RequestDetailsDialogProps {
 
 const RequestDetailsDialog = ({ isOpen, onClose, request }: RequestDetailsDialogProps) => {
   const { toast } = useToast();
+  const { authState } = useAuth();
+  const { user } = authState;
+  
   const [clientDetails, setClientDetails] = useState<UserResponse | null>(null);
   const [isLoadingClient, setIsLoadingClient] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   useEffect(() => {
     const fetchClientDetails = async () => {
@@ -53,6 +60,7 @@ const RequestDetailsDialog = ({ isOpen, onClose, request }: RequestDetailsDialog
   if (!request) return null;
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -124,7 +132,18 @@ const RequestDetailsDialog = ({ isOpen, onClose, request }: RequestDetailsDialog
             )}
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            {user && request && user.id !== request.clientId && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => setIsReportOpen(true)}
+              >
+                <AlertCircle className="w-4 h-4 mr-2" />
+                Report Request
+              </Button>
+            )}
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
@@ -132,6 +151,16 @@ const RequestDetailsDialog = ({ isOpen, onClose, request }: RequestDetailsDialog
         </div>
       </DialogContent>
     </Dialog>
+
+    {request && (
+      <ReportDialog 
+        isOpen={isReportOpen} 
+        onClose={() => setIsReportOpen(false)}
+        reportedUserId={request.clientId}
+        requestId={request.id}
+      />
+    )}
+    </>
   );
 };
 

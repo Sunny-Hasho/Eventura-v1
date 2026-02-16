@@ -13,5 +13,6 @@ public class PaymentResponse {
     private Double amount;
     private String paymentStatus;
     private String transactionId;
+    private String disputeReason;
     private LocalDateTime createdAt;
 }
