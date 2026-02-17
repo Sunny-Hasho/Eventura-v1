@@ -29,9 +29,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { portfolioService } from "@/services/portfolioService";
-import { PortfolioResponse } from "@/types/portfolio";
-import { Loader2 } from "lucide-react";
+import { PortfolioResponse, PortfolioAuditLog } from "@/types/portfolio";
+import { Loader2, History, ArrowLeft, Trash2 } from "lucide-react";
 
 const ProviderVerificationTable = () => {
   const [providers, setProviders] = useState<ProviderProfileResponse[]>([]);
@@ -45,6 +47,17 @@ const ProviderVerificationTable = () => {
   const [isPortfolioDialogOpen, setIsPortfolioDialogOpen] = useState(false);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioResponse[]>([]);
   const [isPortfolioLoading, setIsPortfolioLoading] = useState(false);
+  
+  // History State
+  const [auditLogs, setAuditLogs] = useState<PortfolioAuditLog[]>([]);
+  const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  
+  // Delete State
+  const [deletePortfolioId, setDeletePortfolioId] = useState<number | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const { toast } = useToast();
   const pageSize = 5;
 
@@ -96,6 +109,7 @@ const ProviderVerificationTable = () => {
     setSelectedProvider(provider);
     setIsPortfolioDialogOpen(true);
     setIsPortfolioLoading(true);
+    setViewingHistoryId(null); // Reset history view
     try {
       const response = await portfolioService.getProviderPortfolios(provider.id, 0, 10);
       setPortfolioItems(response.content);
@@ -107,6 +121,65 @@ const ProviderVerificationTable = () => {
       });
     } finally {
       setIsPortfolioLoading(false);
+    }
+  };
+
+  const handleViewHistory = async (portfolioId: number) => {
+    setViewingHistoryId(portfolioId);
+    setIsHistoryLoading(true);
+    try {
+        if (!selectedProvider) return;
+        const logs = await portfolioService.getPortfolioHistory(selectedProvider.id, portfolioId);
+        setAuditLogs(logs);
+    } catch (err) {
+        toast({
+            title: "Error",
+            description: "Failed to fetch portfolio history",
+            variant: "destructive",
+        });
+    } finally {
+        setIsHistoryLoading(false);
+    }
+  };
+
+  const handleBackToPortfolio = () => {
+    setViewingHistoryId(null);
+    setAuditLogs([]);
+  };
+
+  const handleDeletePortfolio = (portfolioId: number) => {
+    setDeletePortfolioId(portfolioId);
+    setDeleteReason("");
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePortfolio = async () => {
+    if (!deletePortfolioId || !deleteReason.trim()) {
+        toast({
+            title: "Error",
+            description: "Please provide a reason for deletion.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    try {
+        await portfolioService.deletePortfolioByAdmin(deletePortfolioId, deleteReason);
+        toast({
+            title: "Success",
+            description: "Portfolio item deleted successfully",
+        });
+        
+        // Remove from local state
+        setPortfolioItems(items => items.filter(item => item.id !== deletePortfolioId));
+        setIsDeleteDialogOpen(false);
+        setDeletePortfolioId(null);
+    } catch (err) {
+        toast({
+            title: "Error",
+            description: "Failed to delete portfolio item",
+            variant: "destructive",
+        });
     }
   };
 
@@ -236,6 +309,44 @@ const ProviderVerificationTable = () => {
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
             </div>
+          ) : viewingHistoryId ? (
+            <div className="space-y-4">
+                <Button variant="ghost" onClick={handleBackToPortfolio} className="mb-2">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Portfolio
+                </Button>
+                
+                {isHistoryLoading ? (
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                    </div>
+                ) : auditLogs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">No history found for this item.</div>
+                ) : (
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Field</TableHead>
+                                    <TableHead>Old Value</TableHead>
+                                    <TableHead>New Value</TableHead>
+                                    <TableHead>Changed At</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {auditLogs.map((log) => (
+                                    <TableRow key={log.id}>
+                                        <TableCell className="font-medium">{log.fieldName}</TableCell>
+                                        <TableCell className="text-red-600 break-all">{log.oldValue || "-"}</TableCell>
+                                        <TableCell className="text-green-600 break-all">{log.newValue || "-"}</TableCell>
+                                        <TableCell>{new Date(log.changedAt).toLocaleString()}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </div>
           ) : portfolioItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               {portfolioItems.map((item) => (
@@ -257,6 +368,16 @@ const ProviderVerificationTable = () => {
                       <span className="text-sm text-gray-500">
                         {new Date(item.projectDate).toLocaleDateString()}
                       </span>
+                    </div>
+                    <div className="mt-4 pt-4 border-t flex justify-end space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleViewHistory(item.id)}>
+                            <History className="h-4 w-4 mr-2" />
+                            History
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeletePortfolio(item.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                        </Button>
                     </div>
                   </div>
                 </div>
@@ -290,6 +411,40 @@ const ProviderVerificationTable = () => {
           Next
         </Button>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this portfolio item? This action cannot be undone.
+              The provider will be notified with the reason you provide below.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="delete-reason" className="mb-2 block">Reason for deletion</Label>
+            <Textarea 
+                id="delete-reason" 
+                placeholder="e.g., Violeted content policy..." 
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                  e.preventDefault();
+                  confirmDeletePortfolio();
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

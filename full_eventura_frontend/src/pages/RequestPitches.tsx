@@ -6,6 +6,7 @@ import { pitchService } from "@/services/pitchService";
 import { serviceRequestService } from "@/services/serviceRequestService";
 import { userService } from "@/services/userService";
 import { portfolioService } from "@/services/portfolioService";
+import { paymentService } from "@/services/paymentService";
 import { PitchResponse } from "@/types/pitch";
 import { ServiceRequestResponse } from "@/types/serviceRequest";
 import { UserResponse } from "@/types/user";
@@ -15,6 +16,7 @@ import { ArrowLeft, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/BackButton";
+import { PaymentConfirmModal } from "@/components/payments/PaymentConfirmModal";
 import {
   Table,
   TableBody,
@@ -50,6 +52,9 @@ const RequestPitches = () => {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [portfolioError, setPortfolioError] = useState<string | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioResponse[]>([]);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
+  const [selectedPitchForPayment, setSelectedPitchForPayment] = useState<PitchResponse | null>(null);
   const pageSize = 10;
 
   useEffect(() => {
@@ -106,44 +111,52 @@ const RequestPitches = () => {
     setIsDetailsOpen(true);
   };
 
-  const handleAssignProvider = async (providerId: number, pitchId: number) => {
+  // NEW: Accept pitch and create escrow payment
+  const handleAcceptPitch = async (pitchId: number) => {
     if (!requestId) return;
 
     try {
       setIsAssigning(true);
       const selectedPitch = pitches.find(p => p.id === pitchId);
       if (!selectedPitch) throw new Error("Pitch not found");
-      // Assign provider and update pitch statuses
-      const [updatedRequest, updatedPitch] = await Promise.all([
-        serviceRequestService.assignProvider(Number(requestId), providerId),
-        pitchService.updatePitchStatus(pitchId, "WIN")
-      ]);
-      // Update all other pitches to LOSE status
-      const otherPitches = pitches.filter(p => p.id !== pitchId);
-      await Promise.all(otherPitches.map(pitch => pitchService.updatePitchStatus(pitch.id, "LOSE")));
-      // Update the request budget to the assigned pitch's proposedPrice
-      const updatedRequestWithBudget = await serviceRequestService.updateRequestBudget(Number(requestId), selectedPitch.proposedPrice);
-      setRequest(updatedRequestWithBudget);
-      // Update the pitches list to reflect all status changes
-      setPitches(pitches.map(pitch => {
-        if (pitch.id === pitchId) {
-          return { ...pitch, status: "WIN", isAssigned: true };
-        }
-        return { ...pitch, status: "LOSE" };
+
+      // Call new accept endpoint (creates payment with AWAITING_PAYMENT status)
+      const acceptedPitch = await pitchService.acceptPitch(pitchId);
+      
+      // Fetch the newly created payment
+      const payment = await paymentService.getPaymentStatusByRequestId(Number(requestId));
+      
+      // Update local state
+      setRequest({ ...request!, status: request!.status }); // Request stays OPEN until payment confirmed
+      setPitches(pitches.map(p => {
+        if (p.id === pitchId) return { ...p, status: "ACCEPTED" as any };
+        if (p.status === "PENDING") return { ...p, status: "REJECTED" as any };
+        return p;
       }));
+
+      // Store payment info and open payment modal
+      setSelectedPaymentId(payment.id);
+      setSelectedPitchForPayment(selectedPitch);
+      setPaymentModalOpen(true);
+
       toast({
-        title: "Success",
-        description: "Provider assigned, pitch statuses updated, and budget set.",
+        title: "Pitch Accepted!",
+        description: "Please confirm your payment to proceed.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to assign provider, update pitch statuses, or update budget.",
+        description: error instanceof Error ? error.message : "Failed to accept pitch",
         variant: "destructive",
       });
     } finally {
       setIsAssigning(false);
     }
+  };
+
+  const handlePaymentConfirmed = () => {
+    // Refresh data after payment confirmation
+    window.location.reload();
   };
 
   const handlePageChange = (newPage: number) => {
@@ -251,10 +264,10 @@ const RequestPitches = () => {
                               <Button
                                 variant="default"
                                 size="sm"
-                                onClick={() => handleAssignProvider(pitch.providerId, pitch.id)}
+                                onClick={() => handleAcceptPitch(pitch.id)}
                                 disabled={isAssigning}
                               >
-                                Assign
+                                Accept Pitch
                               </Button>
                             )}
                           </div>
@@ -345,7 +358,7 @@ const RequestPitches = () => {
                 {canAssign && (
                   <Button
                     variant={selectedPitch.providerId === request?.assignedProviderId ? "outline" : "default"}
-                    onClick={() => handleAssignProvider(selectedPitch.providerId, selectedPitch.id)}
+                    onClick={() => handleAcceptPitch(selectedPitch.id)}
                     disabled={isAssigning || selectedPitch.providerId === request?.assignedProviderId}
                   >
                     {selectedPitch.providerId === request?.assignedProviderId ? (
@@ -354,7 +367,7 @@ const RequestPitches = () => {
                         Assigned
                       </>
                     ) : (
-                      "Assign Provider"
+                      "Accept Pitch"
                     )}
                   </Button>
                 )}
@@ -405,6 +418,23 @@ const RequestPitches = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Payment Confirmation Modal */}
+      {selectedPaymentId && selectedPitchForPayment && (
+        <PaymentConfirmModal
+          isOpen={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          paymentId={selectedPaymentId}
+          amount={selectedPitchForPayment.proposedPrice}
+          pitchDetails={{
+            providerName: providerDetails[selectedPitchForPayment.providerId]
+              ? `${providerDetails[selectedPitchForPayment.providerId].firstName} ${providerDetails[selectedPitchForPayment.providerId].lastName}`
+              : `Provider #${selectedPitchForPayment.providerId}`,
+            serviceType: request?.serviceType || "Service",
+          }}
+          onSuccess={handlePaymentConfirmed}
+        />
+      )}
     </div>
   );
 };

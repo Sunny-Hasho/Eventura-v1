@@ -23,7 +23,6 @@ public class Payment {
 
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     private User client;
 
     @ManyToOne
@@ -40,6 +39,22 @@ public class Payment {
     @Column(name = "transaction_id")
     private String transactionId;
 
+    // Stripe fields for payment integration
+    @Column(name = "stripe_payment_intent_id")
+    private String stripePaymentIntentId;
+
+    @Column(name = "stripe_transfer_id")
+    private String stripeTransferId;
+
+    @Column(name = "platform_fee")
+    private Double platformFee; // Commission taken by Eventura
+
+    @Column(name = "provider_amount")
+    private Double providerAmount; // Amount provider receives after commission
+
+    @Column(name = "dispute_reason")
+    private String disputeReason;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -52,6 +67,12 @@ public class Payment {
     }
 
     public enum PaymentStatus {
-        PENDING, COMPLETED, FAILED
+        AWAITING_PAYMENT,  // Pitch accepted, waiting for client to pay
+        ESCROWED,          // Money received, held in platform account
+        PENDING_RELEASE,   // Provider marked work complete, awaiting client approval
+        RELEASED,          // Payment transferred to provider
+        REFUNDED,          // Money returned to client
+        DISPUTED,          // Under admin review
+        EXPIRED            // Client didn't pay within time limit
     }
 }

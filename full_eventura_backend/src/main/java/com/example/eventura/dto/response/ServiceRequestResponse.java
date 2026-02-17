@@ -16,6 +16,7 @@ public class ServiceRequestResponse {
     private String serviceType;
     private String description;
     private Double budget;
+    private Double assignedPrice;
     private String status;
     private Long assignedProviderId;
     private LocalDateTime createdAt;

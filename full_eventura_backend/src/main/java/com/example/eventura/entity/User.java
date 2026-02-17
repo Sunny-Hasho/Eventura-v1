@@ -64,4 +64,12 @@ public class User {
     public enum AccountStatus {
         ACTIVE, SUSPENDED, DELETED
     }
+
+    public enum AuthProvider {
+        LOCAL, GOOGLE
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider")
+    private AuthProvider authProvider;
 }

@@ -7,6 +7,7 @@ import com.example.eventura.dto.response.ServiceRequestResponse;
 import com.example.eventura.dto.response.UserResponse;
 import com.example.eventura.dto.response.VerificationDocumentResponse;
 import com.example.eventura.dto.response.ReviewResponse;
+import com.example.eventura.dto.response.PaymentResponse;
 import com.example.eventura.security.JwtTokenProvider;
 import com.example.eventura.service.*;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AdminController {
     private final NotificationService notificationService;
     private final PortfolioService portfolioService;
     private final VerificationDocumentService verificationDocumentService;
+    private final PaymentService paymentService;
     private final JwtTokenProvider jwtTokenProvider;
 
     @PutMapping("/users/{userId}/status")
@@ -40,6 +42,20 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
+    }
+
+    @GetMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
+        // Admin can view any user
+        return ResponseEntity.ok(userService.getUserById(userId, userId));
+    }
+
+    @PutMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable Long userId, @RequestBody com.example.eventura.dto.request.UpdateUserRequest request) {
+        return ResponseEntity.ok(userService.updateUser(userId, request));
     }
 
     @DeleteMapping("/users/{userId}")
@@ -77,6 +93,14 @@ public class AdminController {
         return ResponseEntity.ok(portfolioService.getAllPortfolios(status, pageable));
     }
 
+    @DeleteMapping("/portfolios/{portfolioId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePortfolio(
+            @PathVariable Long portfolioId, @RequestParam String reason) {
+        portfolioService.deletePortfolioByAdmin(portfolioId, reason);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/reviews/{reviewId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReviewResponse> updateReviewStatus(
@@ -109,6 +133,13 @@ public class AdminController {
     public ResponseEntity<ProviderResponse> updateProviderVerificationStatus(
             @PathVariable Long providerId, @RequestBody Boolean isVerified) {
         return ResponseEntity.ok(providerService.updateProviderVerificationStatus(providerId, isVerified));
+    }
+
+    @GetMapping("/payments")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<PaymentResponse>> getAllPayments(
+            @RequestParam(required = false) String status, Pageable pageable) {
+        return ResponseEntity.ok(paymentService.getAllPayments(status, pageable));
     }
 
     private Long getUserIdFromToken(String authHeader) {

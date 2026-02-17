@@ -83,6 +83,15 @@ public class PitchController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    // NEW: Accept a pitch and create escrow payment
+    @PostMapping("/{pitchId}/accept")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<PitchResponse> acceptPitch(@PathVariable Long pitchId,
+                                                      @RequestHeader("Authorization") String authHeader) {
+        Long clientId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(pitchService.acceptPitch(pitchId, clientId));
+    }
+
     private Long getUserIdFromToken(String authHeader) {
         String token = authHeader.replace("Bearer ", "");
         return jwtTokenProvider.getUserIdFromJWT(token);

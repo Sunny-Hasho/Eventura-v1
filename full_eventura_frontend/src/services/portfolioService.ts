@@ -27,6 +27,65 @@ class PortfolioService {
     return await response.json();
   }
 
+  async updatePortfolio(providerId: number, portfolioId: number, data: PortfolioRequest): Promise<PortfolioResponse> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/providers/${providerId}/portfolios/${portfolioId}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Portfolio not found");
+      }
+      throw new Error("Failed to update portfolio");
+    }
+
+    return await response.json();
+  }
+
+  async getPortfolioHistory(providerId: number, portfolioId: number): Promise<any[]> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/providers/${providerId}/portfolios/${portfolioId}/history`, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch portfolio history");
+    }
+
+    return await response.json();
+  }
+
+  async deletePortfolioByAdmin(portfolioId: number, reason: string): Promise<void> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/admin/portfolios/${portfolioId}?reason=${encodeURIComponent(reason)}`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to delete portfolio");
+    }
+  }
+
   async getProviderPortfolios(providerId: number, page = 0, size = 10): Promise<PortfolioPage> {
     const token = getAuthToken();
     if (!token) throw new Error("Not authenticated");

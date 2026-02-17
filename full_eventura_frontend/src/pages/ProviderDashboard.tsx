@@ -67,7 +67,7 @@ const ProviderDashboard = () => {
   });
 
   const totalEarnings = paymentsData?.content
-    ?.filter((p: PaymentResponse) => p.paymentStatus === "COMPLETED")
+    ?.filter((p: PaymentResponse) => p.paymentStatus === "RELEASED")
     .reduce((sum: number, p: PaymentResponse) => sum + p.amount, 0) || 0;
 
   const fetchRequests = async () => {
@@ -812,7 +812,7 @@ const ProviderDashboard = () => {
                               <p className="text-sm font-medium text-muted-foreground">Pending Earnings</p>
                               <p className="text-2xl font-bold">
                                 ${paymentsData?.content
-                                  ?.filter((p: PaymentResponse) => p.paymentStatus === "PENDING")
+                                  ?.filter((p: PaymentResponse) => p.paymentStatus === "ESCROWED" || p.paymentStatus === "PENDING_RELEASE")
                                   .reduce((sum: number, p: PaymentResponse) => sum + p.amount, 0)
                                   .toLocaleString() || 0}
                               </p>
@@ -849,9 +849,9 @@ const ProviderDashboard = () => {
                                     <div className="flex items-center gap-2">
                                       <h3 className="font-medium">Payment #{payment.id}</h3>
                                       <Badge variant={
-                                        payment.paymentStatus === "COMPLETED" ? "default" :
-                                        payment.paymentStatus === "PENDING" ? "secondary" :
-                                        payment.paymentStatus === "FAILED" ? "destructive" :
+                                        payment.paymentStatus === "RELEASED" ? "default" :
+                                        (payment.paymentStatus === "ESCROWED" || payment.paymentStatus === "PENDING_RELEASE") ? "secondary" :
+                                        (payment.paymentStatus === "REFUNDED" || payment.paymentStatus === "DISPUTED") ? "destructive" :
                                         "outline"
                                       }>
                                         {payment.paymentStatus}
@@ -904,7 +904,7 @@ const ProviderDashboard = () => {
                             <div className="space-y-1">
                               <p className="text-sm font-medium text-muted-foreground">Completed Payments</p>
                               <p className="text-2xl font-bold">
-                                {paymentsData?.content.filter(p => p.paymentStatus === "COMPLETED").length || 0}
+                                {paymentsData?.content.filter(p => p.paymentStatus === "RELEASED").length || 0}
                               </p>
                             </div>
                             <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -915,7 +915,7 @@ const ProviderDashboard = () => {
                             <div className="space-y-1">
                               <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
                               <p className="text-2xl font-bold">
-                                {paymentsData?.content.filter(p => p.paymentStatus === "PENDING").length || 0}
+                                {paymentsData?.content.filter(p => p.paymentStatus === "ESCROWED" || p.paymentStatus === "PENDING_RELEASE").length || 0}
                               </p>
                             </div>
                             <Clock className="w-8 h-8 text-yellow-500" />
@@ -926,7 +926,7 @@ const ProviderDashboard = () => {
                             <div className="space-y-1">
                               <p className="text-sm font-medium text-muted-foreground">Failed Payments</p>
                               <p className="text-2xl font-bold">
-                                {paymentsData?.content.filter(p => p.paymentStatus === "FAILED").length || 0}
+                                {paymentsData?.content.filter(p => p.paymentStatus === "REFUNDED" || p.paymentStatus === "DISPUTED" || p.paymentStatus === "EXPIRED").length || 0}
                               </p>
                             </div>
                             <XCircle className="w-8 h-8 text-red-500" />

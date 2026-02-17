@@ -24,6 +24,9 @@ public class PitchService {
     private final ServiceRequestRepository serviceRequestRepository;
     private final NotificationService notificationService;
     private final WebSocketEventService webSocketEventService;
+    private final PaymentService paymentService;
+
+    private static final Double PLATFORM_FEE_PERCENTAGE = 10.0; // 10% platform commission
 
     public PitchResponse createPitch(Long providerId, PitchRequest request) {
         User provider = userRepository.findById(providerId)
@@ -122,6 +125,71 @@ public class PitchService {
                 pitch.getProvider().getFirstName(), pitch.getProvider().getLastName(),
                 pitch.getRequest().getTitle());
         notificationService.createNotification(client, message);
+    }
+
+    /**
+     * Accept a pitch and create escrow payment
+     * This is the NEW flow that replaces direct assignment
+     */
+    public PitchResponse acceptPitch(Long pitchId, Long clientId) {
+        Pitch pitch = pitchRepository.findById(pitchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pitch not found"));
+
+        ServiceRequest serviceRequest = pitch.getRequest();
+
+        /// Verify the user is the client who owns the request
+        if (!serviceRequest.getClient().getId().equals(clientId)) {
+            throw new UnauthorizedException("Only the client who created the request can accept pitches");
+        }
+
+        // Verify request is still open
+        if (serviceRequest.getStatus() != ServiceRequest.Status.OPEN) {
+            throw new IllegalStateException("Request is not accepting pitches");
+        }
+
+        // Update pitch status to ACCEPTED (not PAID yet - waiting for payment)
+        pitch.setStatus(Pitch.Status.ACCEPTED);
+        Pitch acceptedPitch = pitchRepository.save(pitch);
+
+        // Reject all other pitches for this request
+        pitchRepository.findByRequest(serviceRequest, Pageable.unpaged())
+                .stream()
+                .filter(p -> !p.getId().equals(pitchId) && p.getStatus() == Pitch.Status.PENDING)
+                .forEach(p -> {
+                    p.setStatus(Pitch.Status.REJECTED);
+                    pitchRepository.save(p);
+                    
+                    // Notify rejected providers
+                    String rejectMsg = String.format("Your pitch for request: %s was not selected",
+                            serviceRequest.getTitle());
+                    notificationService.createNotification(p.getProvider(), rejectMsg);
+                });
+
+        // Assign provider to the request and update status to ASSIGNED
+        User provider = pitch.getProvider();
+        serviceRequest.setAssignedProvider(provider);
+        serviceRequest.setAssignedPrice(pitch.getProposedPrice());
+        serviceRequest.setStatus(ServiceRequest.Status.ASSIGNED);
+        serviceRequestRepository.save(serviceRequest);
+
+        // Create escrow payment (status = AWAITING_PAYMENT)
+        paymentService.createEscrowPayment(
+                serviceRequest.getId(),
+                provider.getId(),
+                pitch.getProposedPrice(),
+                PLATFORM_FEE_PERCENTAGE
+        );
+
+        // Notify accepted provider
+        String providerMsg = String.format(
+                "Your pitch of Rs %s was accepted! Waiting for client payment to start work.",
+                pitch.getProposedPrice()
+        );
+        notificationService.createNotification(provider, providerMsg);
+
+        webSocketEventService.broadcastPitchChange("ACCEPTED");
+
+        return convertToResponse(acceptedPitch);
     }
 
     private PitchResponse convertToResponse(Pitch pitch) {

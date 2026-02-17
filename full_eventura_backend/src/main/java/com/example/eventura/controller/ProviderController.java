@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/providers")
 @RequiredArgsConstructor
@@ -111,6 +113,24 @@ public class ProviderController {
         Long userId = getUserIdFromToken(authHeader);
         providerService.deletePortfolio(providerId, portfolioId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // Update Portfolio
+    @PutMapping("/{providerId}/portfolios/{portfolioId}")
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<PortfolioResponse> updatePortfolio(@PathVariable Long providerId,
+                                                             @PathVariable Long portfolioId,
+                                                             @RequestBody PortfolioRequest request) {
+        return ResponseEntity.ok(providerService.updatePortfolio(providerId, portfolioId, request));
+    }
+
+    // Get Portfolio History (Audit Log)
+    @GetMapping("/{providerId}/portfolios/{portfolioId}/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'PROVIDER')") // Allow Provider and Client to see history too if desired, or restrict to ADMIN
+    public ResponseEntity<List<com.example.eventura.entity.PortfolioAuditLog>> getPortfolioHistory(@PathVariable Long providerId,
+                                                                                                   @PathVariable Long portfolioId) {
+        // In a real app, verify that the portfolio belongs to the provider
+        return ResponseEntity.ok(providerService.getPortfolioHistory(portfolioId));
     }
 
     private Long getUserIdFromToken(String authHeader) {

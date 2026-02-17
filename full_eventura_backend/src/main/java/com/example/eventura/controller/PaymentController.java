@@ -83,4 +83,56 @@ public class PaymentController {
         PaymentResponse response = paymentService.getPaymentStatusByRequestId(requestId, email);
         return ResponseEntity.ok(response);
     }
+
+    // ==================== NEW ESCROW PAYMENT ENDPOINTS ====================
+
+    // Client confirms payment (manual transaction ID)
+    @PostMapping("/{paymentId}/mark-paid")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<PaymentResponse> markAsPaid(
+            @PathVariable Long paymentId,
+            @RequestBody java.util.Map<String, String> request,
+            @RequestHeader("Authorization") String token) {
+        String email = jwtTokenProvider.getEmailFromToken(token.replace("Bearer ", ""));
+        String transactionId = request.get("transactionId");
+        PaymentResponse response = paymentService.markAsPaid(paymentId, email, transactionId);
+        return ResponseEntity.ok(response);
+    }
+
+    // Client releases payment to provider after approving work
+    @PostMapping("/{paymentId}/release")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN')")
+    public ResponseEntity<PaymentResponse> releasePayment(
+            @PathVariable Long paymentId,
+            @RequestHeader("Authorization") String token) {
+        String email = jwtTokenProvider.getEmailFromToken(token.replace("Bearer ", ""));
+        PaymentResponse response = paymentService.releasePayment(paymentId, email);
+        return ResponseEntity.ok(response);
+    }
+
+    // Admin refunds payment to client
+    @PostMapping("/{paymentId}/refund")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PaymentResponse> refundPayment(
+            @PathVariable Long paymentId,
+            @RequestBody java.util.Map<String, String> request,
+            @RequestHeader("Authorization") String token) {
+        Long adminId = jwtTokenProvider.getUserIdFromJWT(token.replace("Bearer ", ""));
+        String reason = request.get("reason");
+        PaymentResponse response = paymentService.refundPayment(paymentId, adminId, reason);
+        return ResponseEntity.ok(response);
+    }
+
+    // Client disputes payment
+    @PostMapping("/{paymentId}/dispute")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<PaymentResponse> disputePayment(
+            @PathVariable Long paymentId,
+            @RequestBody java.util.Map<String, String> request,
+            @RequestHeader("Authorization") String token) {
+        String email = jwtTokenProvider.getEmailFromToken(token.replace("Bearer ", ""));
+        String disputeReason = request.get("reason");
+        PaymentResponse response = paymentService.disputePayment(paymentId, email, disputeReason);
+        return ResponseEntity.ok(response);
+    }
 }

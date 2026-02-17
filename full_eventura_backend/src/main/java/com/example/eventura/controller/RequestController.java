@@ -101,6 +101,38 @@ public class RequestController {
         return ResponseEntity.noContent().build();
     }
 
+    // ==================== NEW WORK PHASE ENDPOINTS ====================
+
+    // Provider starts work on assigned request
+    @PostMapping("/{requestId}/start-work")
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<ServiceRequestResponse> startWork(
+            @PathVariable Long requestId,
+            @RequestHeader("Authorization") String authHeader) {
+        Long providerId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(requestService.startWork(requestId, providerId));
+    }
+
+    // Provider marks work as complete
+    @PostMapping("/{requestId}/mark-complete")
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<ServiceRequestResponse> markComplete(
+            @PathVariable Long requestId,
+            @RequestHeader("Authorization") String authHeader) {
+        Long providerId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(requestService.markComplete(requestId, providerId));
+    }
+
+    // Client approves work and releases payment
+    @PostMapping("/{requestId}/approve")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ServiceRequestResponse> approveWork(
+            @PathVariable Long requestId,
+            @RequestHeader("Authorization") String authHeader) {
+        Long clientId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(requestService.approveWork(requestId, clientId));
+    }
+
 
 private Long getUserIdFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

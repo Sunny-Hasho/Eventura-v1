@@ -73,6 +73,66 @@ class PaymentService {
     if (!response.ok) throw new Error("Failed to fetch provider payments");
     return await response.json();
   }
+
+  // NEW: Escrow payment methods
+  async markAsPaid(paymentId: number, transactionId: string): Promise<PaymentResponse> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/payments/${paymentId}/mark-paid`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ transactionId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to mark payment as paid");
+    }
+    return await response.json();
+  }
+
+  async releasePayment(paymentId: number): Promise<PaymentResponse> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/payments/${paymentId}/release`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to release payment");
+    }
+    return await response.json();
+  }
+
+  async disputePayment(paymentId: number, reason: string): Promise<PaymentResponse> {
+    const token = getAuthToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch(`${API_URL}/api/payments/${paymentId}/dispute`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to dispute payment");
+    }
+    return await response.json();
+  }
 }
 
 export const paymentService = new PaymentService(); 

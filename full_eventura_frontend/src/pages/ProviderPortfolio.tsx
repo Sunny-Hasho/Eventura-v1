@@ -27,7 +27,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Upload, Pencil } from "lucide-react";
 import { providerService } from "@/services/providerService";
 import {
   Dialog as ConfirmDialog,
@@ -38,6 +38,7 @@ import {
   DialogFooter as ConfirmDialogFooter,
 } from "@/components/ui/dialog";
 import BackButton from "@/components/BackButton";
+import { supabase } from "@/lib/supabase";
 
 const PAGE_SIZE = 10;
 
@@ -62,6 +63,11 @@ const ProviderPortfolio = () => {
   const [profileExists, setProfileExists] = useState<boolean | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  
+  // Image Upload State
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Fetch providerId on mount
   useEffect(() => {
@@ -127,6 +133,7 @@ const ProviderPortfolio = () => {
         projectDate: "",
         eventType: "WEDDING",
       });
+      setImageFile(null);
       toast({
         title: "Success",
         description: "Portfolio item created successfully",
@@ -136,6 +143,27 @@ const ProviderPortfolio = () => {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create portfolio item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: PortfolioRequest }) =>
+      portfolioService.updatePortfolio(providerId!, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["providerPortfolios"] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Portfolio item updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update portfolio item",
         variant: "destructive",
       });
     },
@@ -190,9 +218,102 @@ const ProviderPortfolio = () => {
     );
   }
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${authState.user?.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('portfolio-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from('portfolio-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const resetForm = () => {
+    setNewPortfolio({
+      title: "",
+      description: "",
+      imageUrl: "",
+      projectDate: "",
+      eventType: "WEDDING",
+    });
+    setImageFile(null);
+    setEditingId(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsCreateDialogOpen(true);
+  };
+
+  const openEditDialog = (item: PortfolioResponse) => {
+    setNewPortfolio({
+      title: item.title,
+      description: item.description,
+      imageUrl: item.imageUrl,
+      projectDate: item.projectDate,
+      eventType: item.eventType as EventType,
+    });
+    setImageFile(null); // Reset file input, use existing URL unless changed
+    setEditingId(item.id);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(newPortfolio);
+    
+    if (!imageFile && !newPortfolio.imageUrl) {
+        toast({
+            title: "Error",
+            description: "Please select an image",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    try {
+      setUploading(true);
+      let publicUrl = newPortfolio.imageUrl;
+
+      if (imageFile) {
+        publicUrl = await uploadImage(imageFile);
+      }
+      
+      const portfolioData = {
+        ...newPortfolio,
+        imageUrl: publicUrl
+      };
+      
+      if (editingId) {
+        updateMutation.mutate({ id: editingId, data: portfolioData });
+      } else {
+        createMutation.mutate(portfolioData);
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = (portfolioId: number) => {
@@ -225,7 +346,7 @@ const ProviderPortfolio = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Button onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
               Add Portfolio Item
             </Button>
@@ -269,6 +390,15 @@ const ProviderPortfolio = () => {
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 ml-2"
+                        onClick={() => openEditDialog(item)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -278,7 +408,7 @@ const ProviderPortfolio = () => {
         ) : (
           <div className="text-center py-16 text-gray-500">
             <p>You have not set up your portfolio yet.</p>
-            <Button className="mt-6" onClick={() => setIsCreateDialogOpen(true)}>
+            <Button className="mt-6" onClick={openCreateDialog}>
               <Plus className="h-4 w-4 mr-2" />
               Add Portfolio Item
             </Button>
@@ -310,9 +440,9 @@ const ProviderPortfolio = () => {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add Portfolio Item</DialogTitle>
+              <DialogTitle>{editingId ? "Edit Portfolio Item" : "Add Portfolio Item"}</DialogTitle>
               <DialogDescription>
-                Add a new project to your portfolio
+                {editingId ? "Update your project details" : "Add a new project to your portfolio"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
@@ -340,16 +470,25 @@ const ProviderPortfolio = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    type="url"
-                    value={newPortfolio.imageUrl}
-                    onChange={(e) =>
-                      setNewPortfolio({ ...newPortfolio, imageUrl: e.target.value })
-                    }
-                    required
-                  />
+                  <Label htmlFor="image">Project Image</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      required
+                      className="cursor-pointer"
+                    />
+                  </div>
+                  {imageFile ? (
+                    <p className="text-xs text-gray-500">Selected: {imageFile.name}</p>
+                  ) : newPortfolio.imageUrl && (
+                    <div className="mt-2 relative w-20 h-20">
+                        <img src={newPortfolio.imageUrl} alt="Current" className="w-full h-full object-cover rounded" />
+                        <p className="text-xs text-gray-500 mt-1">Current Image</p>
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="projectDate">Project Date</Label>
@@ -391,8 +530,17 @@ const ProviderPortfolio = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create"}
+                <Button type="submit" disabled={uploading || createMutation.isPending || updateMutation.isPending}>
+                  {uploading ? (
+                    <>
+                        <Upload className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                    </>
+                  ) : editingId ? (
+                    updateMutation.isPending ? "Updating..." : "Update"
+                  ) : (
+                    createMutation.isPending ? "Creating..." : "Create"
+                  )}
                 </Button>
               </DialogFooter>
             </form>
