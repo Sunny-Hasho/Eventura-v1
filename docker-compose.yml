@@ -1,0 +1,79 @@
+services:
+  # MySQL Database
+  mysqldb:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: EVENTURA
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - eventura-network
+
+  # Spring Boot Backend
+  backend:
+    build: ./full_eventura_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # Database
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/EVENTURA?createDatabaseIfNotExist=true
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-DefaultDevSecretKeyChangeInProduction}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      
+      # Email
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      #added local host 8081 support mail and app url
+      # CORS - Frontend URL
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://localhost:80}
+      
+      # App Config
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-support@eventura.com}
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    networks:
+      - eventura-network
+
+  # React Frontend (nginx)
+  frontend:
+    build:
+      context: ./full_eventura_frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    networks:
+      - eventura-network
+
+networks:
+  eventura-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
